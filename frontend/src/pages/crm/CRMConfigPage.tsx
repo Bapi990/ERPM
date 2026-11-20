@@ -1,23 +1,39 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Sliders, Globe, Mail, Share2, Zap, CheckCircle2,
   AlertCircle, RefreshCw, Copy, Check, Terminal, Play, Eye,
   Lock, Key, ExternalLink, ShieldCheck, ChevronRight, Plus,
-  Edit3, Trash2, Settings, Shield, Server, ArrowRight
+  Edit3, Trash2, Settings, Shield, Server, ArrowRight,
+  Download, BookOpen, FileCode, FileText, CheckCircle, Code,
+  Layers, Sparkles, HelpCircle, CheckSquare
 } from 'lucide-react';
 import { api } from '../../api/client';
 import { useRealtime } from '../../context/RealtimeContext';
 import { Modal } from '../../components/common/Modal';
+import { generateCRMGuidePDF } from '../../utils/crmGuidePdfGenerator';
 
 export const CRMConfigPage: React.FC = () => {
   const { emitEvent } = useRealtime();
+  const [searchParams] = useSearchParams();
   const [channels, setChannels] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'channels' | 'webhook' | 'logs'>('channels');
+  const [activeTab, setActiveTab] = useState<'channels' | 'webhook' | 'guide' | 'logs'>('channels');
   const [copied, setCopied] = useState(false);
   const [testingId, setTestingId] = useState<string | null>(null);
+
+  // Guide interactive state
+  const [selectedCodeTab, setSelectedCodeTab] = useState<'html' | 'curl' | 'js' | 'python' | 'php'>('html');
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'guide' || tabParam === 'webhook' || tabParam === 'channels' || tabParam === 'logs') {
+      setActiveTab(tabParam as any);
+    }
+  }, [searchParams]);
 
   // Edit Channel Modal
   const [editModalChannel, setEditModalChannel] = useState<any | null>(null);
@@ -200,6 +216,326 @@ export const CRMConfigPage: React.FC = () => {
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  // FILE DOWNLOAD HELPERS
+  const downloadFile = (filename: string, content: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Downloaded ${filename}!`);
+  };
+
+  const handleDownloadManual = () => {
+    try {
+      generateCRMGuidePDF();
+      showToast('📄 Official CRM User & API Guide (.pdf) downloaded!');
+      emitEvent(
+        'crm:guide_downloaded',
+        'Official CRM User & API Guide PDF Downloaded',
+        'Odias_CRM_Complete_User_and_API_Guide.pdf downloaded successfully',
+        'success'
+      );
+      return;
+    } catch (e) {
+      console.error('PDF generation fallback:', e);
+    }
+
+    const manualContent = `# Odias ERP — Enterprise CRM & Webhook Developer Manual
+
+## 1. System Overview & Architecture
+Odias ERP CRM is an enterprise-grade customer relationship management and automated lead ingestion engine. It enables organizations to capture leads in real-time from websites, landing pages, Meta (Facebook/Instagram) Lead Ads, Google Ads, IndiaMART, TradeIndia, and third-party webhook systems.
+
+### Core Lifecycle Workflow
+1. **Lead Ingestion**: Inbound JSON payload received via public Webhook URL or REST API.
+2. **Auto-Assignment**: Scored and routed to sales agents via Round-Robin or channel configuration.
+3. **Pipeline Stages**: Deals tracked through New -> Contacted -> Qualified -> Proposal -> Negotiation -> Won.
+4. **1-Click Conversion**: Converts won deals to Customer Accounts with linked commercial GST Invoices.
+
+---
+
+## 2. Inbound Webhook Specification
+- **Endpoint**: \`http://<your-domain>/api/v1/crm/lead-channels/webhook/\`
+- **Alternative Path**: \`http://<your-domain>/api/v1/crm/webhook/inbound/\`
+- **Method**: \`POST\`
+- **Content-Type**: \`application/json\`
+- **Header**: \`X-Webhook-Secret: whsec_inbound_website_88190\`
+
+### JSON Payload Schema
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`name\` or \`first_name\` | String | Yes | Full name or primary contact name |
+| \`last_name\` | String | No | Contact surname |
+| \`email\` | String | Yes | Primary corporate or personal email |
+| \`phone\` | String | No | Contact number with country code |
+| \`company_name\` | String | No | Business or corporate account name |
+| \`city\` | String | No | City of residence or office |
+| \`state\` | String | No | State or province |
+| \`source\` | String | No | Lead channel (e.g. \`website\`, \`meta_ads\`, \`indiamart\`) |
+| \`interested_product\` | String | No | Product interest or service required |
+| \`estimated_value\` | Number | No | Potential deal value in INR |
+| \`notes\` | String | No | Inquiry message or customer requirements |
+
+### Success Response (HTTP 201 Created)
+\`\`\`json
+{
+  "success": true,
+  "lead_id": "LEAD-2026-045",
+  "message": "Lead successfully captured and queued."
+}
+\`\`\`
+
+---
+
+## 3. Platform Integration Guides
+
+### A. Website Contact Form (HTML + JavaScript)
+Add this snippet to your contact form submit handler:
+\`\`\`javascript
+fetch("http://localhost:8000/api/v1/crm/lead-channels/webhook/", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-Webhook-Secret": "whsec_inbound_website_88190"
+  },
+  body: JSON.stringify({
+    name: "Customer Name",
+    email: "customer@example.com",
+    phone: "+91 9876543210",
+    company_name: "Client Enterprise",
+    source: "website_contact_form"
+  })
+});
+\`\`\`
+
+### B. WordPress / Elementor / Contact Form 7
+1. Open your Elementor Form.
+2. In **Actions After Submit**, select **Webhook**.
+3. Set Webhook URL to: \`http://<your-domain>/api/v1/crm/lead-channels/webhook/\`.
+4. Add Header: \`X-Webhook-Secret: whsec_inbound_website_88190\`.
+
+### C. Zapier / Make / Meta & Google Ads
+1. Create a Zap triggered by **New Lead in Facebook Lead Ads** or **Google Ads Form**.
+2. Add a **Webhooks by Zapier (POST)** action.
+3. Map fields to the JSON payload format above.
+
+---
+© 2026 Odias ERP Cloud. All rights reserved.
+`;
+    downloadFile('Odias_CRM_API_Developer_Guide.md', manualContent, 'text/markdown');
+  };
+
+  const handleDownloadHtmlForm = () => {
+    const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inquire Now — Odias CRM Lead Integration</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .card { background: #ffffff; width: 100%; max-width: 520px; border-radius: 16px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
+    h2 { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    p { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px; }
+    input, textarea, select { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 13px; outline: none; transition: border-color 0.2s; }
+    input:focus, textarea:focus, select:focus { border-color: #2563eb; }
+    textarea { resize: vertical; min-height: 80px; }
+    .btn { width: 100%; padding: 12px; background: #2563eb; color: #ffffff; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; transition: background 0.2s; }
+    .btn:hover { background: #1d4ed8; }
+    .alert { padding: 12px; border-radius: 8px; font-size: 12px; font-weight: 600; margin-top: 16px; display: none; }
+    .alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Contact Sales & Request Demo</h2>
+    <p>Submit your details to automatically connect with our sales team.</p>
+    <form id="leadForm" onsubmit="handleLeadSubmit(event)">
+      <div class="form-group">
+        <label>Full Name *</label>
+        <input type="text" name="name" required placeholder="John Doe">
+      </div>
+      <div class="form-group">
+        <label>Corporate Email *</label>
+        <input type="email" name="email" required placeholder="john@company.com">
+      </div>
+      <div class="form-group">
+        <label>Phone Number *</label>
+        <input type="tel" name="phone" required placeholder="+91 98765 43210">
+      </div>
+      <div class="form-group">
+        <label>Company Name</label>
+        <input type="text" name="company_name" placeholder="Acme Technologies Ltd">
+      </div>
+      <div class="form-group">
+        <label>Interested Solution</label>
+        <select name="interested_product">
+          <option value="Odias Cloud ERP Enterprise">Odias Cloud ERP Enterprise</option>
+          <option value="HRMS & Biometric 3-Shift Attendance">HRMS & Biometric Attendance</option>
+          <option value="Smart GST Invoicing & Accounting">Smart GST Invoicing & Accounting</option>
+          <option value="Custom CRM & Lead Routing">Custom CRM & Lead Routing</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Project Requirements / Message</label>
+        <textarea name="notes" placeholder="Describe your team size and timeline..."></textarea>
+      </div>
+      <button type="submit" class="btn" id="submitBtn">Send Inquiry</button>
+      <div id="alertSuccess" class="alert alert-success"></div>
+      <div id="alertError" class="alert alert-error"></div>
+    </form>
+  </div>
+
+  <script>
+    async function handleLeadSubmit(e) {
+      e.preventDefault();
+      const form = e.target;
+      const btn = document.getElementById('submitBtn');
+      const alertSuccess = document.getElementById('alertSuccess');
+      const alertError = document.getElementById('alertError');
+      
+      alertSuccess.style.display = 'none';
+      alertError.style.display = 'none';
+      btn.disabled = true;
+      btn.innerText = 'Connecting to CRM...';
+
+      const payload = {
+        name: form.name.value,
+        email: form.email.value,
+        phone: form.phone.value,
+        company_name: form.company_name.value,
+        interested_product: form.interested_product.value,
+        notes: form.notes.value,
+        source: 'website_contact_form'
+      };
+
+      try {
+        const res = await fetch('http://localhost:8000/api/v1/crm/lead-channels/webhook/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Webhook-Secret': 'whsec_inbound_website_88190'
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alertSuccess.innerText = '✓ Thank you! Your inquiry is received. Reference: ' + (data.lead_id || 'Queued');
+          alertSuccess.style.display = 'block';
+          form.reset();
+        } else {
+          alertError.innerText = 'Error: ' + (data.error || 'Could not register lead.');
+          alertError.style.display = 'block';
+        }
+      } catch (err) {
+        alertError.innerText = 'Connection error: ' + err.message;
+        alertError.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Send Inquiry';
+      }
+    }
+  </script>
+</body>
+</html>`;
+    downloadFile('lead-capture-form.html', htmlContent, 'text/html');
+  };
+
+  const handleDownloadPostmanCollection = () => {
+    const postmanJson = {
+      info: {
+        name: "Odias ERP — CRM & Webhook API Collection",
+        description: "Official REST API requests for Odias ERP CRM Lead Capture, Webhooks, Deals, and Pipelines.",
+        schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+      },
+      item: [
+        {
+          name: "1. Inbound Lead Webhook (Public)",
+          request: {
+            method: "POST",
+            header: [
+              { key: "Content-Type", value: "application/json" },
+              { key: "X-Webhook-Secret", value: "whsec_inbound_website_88190" }
+            ],
+            body: {
+              mode: "raw",
+              raw: JSON.stringify({
+                name: "Rohan Kapoor",
+                email: "rohan@kapoorind.in",
+                phone: "+91 98200 12345",
+                company_name: "Kapoor Industries Ltd",
+                city: "Mumbai",
+                state: "Maharashtra",
+                source: "postman_test",
+                interested_product: "Cloud ERP Enterprise",
+                estimated_value: 850000,
+                notes: "Tested via Postman Collection"
+              }, null, 2)
+            },
+            url: {
+              raw: "http://localhost:8000/api/v1/crm/lead-channels/webhook/",
+              protocol: "http",
+              host: ["localhost"],
+              port: "8000",
+              path: ["api", "v1", "crm", "lead-channels", "webhook", ""]
+            }
+          }
+        },
+        {
+          name: "2. List All Leads (Authenticated)",
+          request: {
+            method: "GET",
+            header: [
+              { key: "Authorization", value: "Bearer {{access_token}}" }
+            ],
+            url: {
+              raw: "http://localhost:8000/api/v1/crm/leads/",
+              protocol: "http",
+              host: ["localhost"],
+              port: "8000",
+              path: ["api", "v1", "crm", "leads", ""]
+            }
+          }
+        },
+        {
+          name: "3. Convert Lead to Customer",
+          request: {
+            method: "POST",
+            header: [
+              { key: "Authorization", value: "Bearer {{access_token}}" },
+              { key: "Content-Type", value: "application/json" }
+            ],
+            url: {
+              raw: "http://localhost:8000/api/v1/crm/leads/lead-001/convert/",
+              protocol: "http",
+              host: ["localhost"],
+              port: "8000",
+              path: ["api", "v1", "crm", "leads", "lead-001", "convert", ""]
+            }
+          }
+        }
+      ]
+    };
+    downloadFile('Odias_CRM_API.postman_collection.json', JSON.stringify(postmanJson, null, 2), 'application/json');
+  };
+
+  const handleDownloadLeadsCsv = () => {
+    const csvContent = `Company Name,Contact Person,Email,Phone,City,State,Source,Interested Product,Estimated Value,Notes
+Tata Steel Kalinganagar,Subrat Jena,subrat.jena@tatasteel.com,+91 94370 88210,Jajpur,Odisha,website,Full Enterprise ERP Suite,1850000,Biometric HRMS and GST billing required
+Jindal Stainless Ltd,Deepali Das,deepali.das@jindalstainless.com,+91 82491 33490,Bhubaneswar,Odisha,referral,HRMS 3-Shift Attendance,1200000,450+ workers biometric shifts
+Reliance Global Infotech,Ananya Sen,ananya.sen@relianceglobal.in,+91 99371 44556,Kolkata,West Bengal,meta_ads,Cloud ERP & CRM Pipeline,950000,Inbound lead from Facebook Ads campaign
+Aditya Heavy Engineering,Vikram Aditya,vikram.aditya@aditya-eng.com,+91 99887 76655,Bhubaneswar,Odisha,website_webhook,Manufacturing & GST Suite,1250000,Inbound enquiry from website landing page`;
+    downloadFile('crm_leads_import_template.csv', csvContent, 'text/csv');
   };
 
   const handleSendCustomWebhook = async (e: React.FormEvent) => {
@@ -385,6 +721,21 @@ export const CRMConfigPage: React.FC = () => {
         >
           <ShieldCheck className="w-4 h-4" />
           <span>Realtime Ingestion Logs ({logs.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('guide')}
+          className={`px-4 py-3 font-bold text-sm border-b-2 transition-colors cursor-pointer flex items-center space-x-2 ${
+            activeTab === 'guide'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>How to Use CRM & API Guide</span>
+          <span className="text-[10px] bg-blue-100 text-blue-700 font-extrabold px-2 py-0.5 rounded-full">
+            Docs & Downloads
+          </span>
         </button>
       </div>
 
@@ -680,7 +1031,6 @@ export const CRMConfigPage: React.FC = () => {
           </div>
         </div>
       )}
-
       {/* TAB 3: INGESTION LOGS */}
       {activeTab === 'logs' && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
@@ -746,6 +1096,395 @@ export const CRMConfigPage: React.FC = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: HOW TO USE CRM & DEVELOPER API GUIDE */}
+      {activeTab === 'guide' && (
+        <div className="space-y-8 animate-in fade-in duration-200">
+          {/* Header Banner */}
+          <div className="bg-linear-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-3xl p-8 text-white relative overflow-hidden shadow-xl border border-blue-700/40">
+            <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-blue-500/20 to-transparent pointer-events-none" />
+            <div className="relative z-10 max-w-3xl">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30 mb-3">
+                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-blue-300" />
+                Comprehensive Developer & Integration Hub
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white mb-2">
+                How to Connect & Use Odias Enterprise CRM
+              </h2>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Connect your website forms, landing pages, Meta Lead Ads, Google Ads, IndiaMART, and custom applications directly into Odias ERP. Capture leads automatically, route them to your sales team in real-time, and convert won deals into GST invoices with one click.
+              </p>
+
+              {/* Quick Downloads Row inside Banner */}
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={handleDownloadManual}
+                  className="px-4 py-2.5 rounded-xl bg-white text-slate-900 hover:bg-blue-50 text-xs font-black shadow-lg transition-all flex items-center space-x-2 cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-blue-600" />
+                  <span>Download Complete Guide (PDF)</span>
+                </button>
+                <button
+                  onClick={handleDownloadHtmlForm}
+                  className="px-4 py-2.5 rounded-xl bg-blue-600/80 hover:bg-blue-600 text-white border border-blue-400/30 text-xs font-black shadow-lg transition-all flex items-center space-x-2 cursor-pointer"
+                >
+                  <FileCode className="w-4 h-4 text-emerald-400" />
+                  <span>Download Lead Form (.html)</span>
+                </button>
+                <button
+                  onClick={handleDownloadPostmanCollection}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-white border border-slate-700 text-xs font-black shadow-lg transition-all flex items-center space-x-2 cursor-pointer"
+                >
+                  <Layers className="w-4 h-4 text-amber-400" />
+                  <span>Download Postman (.json)</span>
+                </button>
+                <button
+                  onClick={handleDownloadLeadsCsv}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-white border border-slate-700 text-xs font-black shadow-lg transition-all flex items-center space-x-2 cursor-pointer"
+                >
+                  <FileText className="w-4 h-4 text-purple-400" />
+                  <span>Download Sample CSV (.csv)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 4 Download Action Cards */}
+          <div>
+            <h3 className="text-lg font-black text-slate-900 mb-3 flex items-center space-x-2">
+              <Download className="w-5 h-5 text-blue-600" />
+              <span>Developer Resources & Templates (Downloadable)</span>
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <h4 className="font-bold text-slate-900 text-sm mb-1">Official CRM & API Guide (PDF)</h4>
+                  <p className="text-xs text-slate-500 mb-4">
+                    Complete enterprise operating manual with module walkthroughs, JSON schemas, webhooks, and troubleshooting.
+                  </p>
+                </div>
+                <button
+                  onClick={handleDownloadManual}
+                  className="w-full py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Guide (.pdf)</span>
+                </button>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
+                    <FileCode className="w-5 h-5" />
+                  </div>
+                  <h4 className="font-bold text-slate-900 text-sm mb-1">Ready-to-Deploy HTML Form</h4>
+                  <p className="text-xs text-slate-500 mb-4">
+                    Standalone, styled contact form pre-configured with fetch() calls directly into your webhook.
+                  </p>
+                </div>
+                <button
+                  onClick={handleDownloadHtmlForm}
+                  className="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download HTML Form</span>
+                </button>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-amber-300 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3">
+                    <Layers className="w-5 h-5" />
+                  </div>
+                  <h4 className="font-bold text-slate-900 text-sm mb-1">Postman API Collection</h4>
+                  <p className="text-xs text-slate-500 mb-4">
+                    Importable Postman collection containing all CRM endpoints, test payloads, and headers.
+                  </p>
+                </div>
+                <button
+                  onClick={handleDownloadPostmanCollection}
+                  className="w-full py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Postman (.json)</span>
+                </button>
+              </div>
+
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-purple-300 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
+                    <Sliders className="w-5 h-5" />
+                  </div>
+                  <h4 className="font-bold text-slate-900 text-sm mb-1">Leads Import CSV Template</h4>
+                  <p className="text-xs text-slate-500 mb-4">
+                    Clean CSV template with sample data for bulk importing historical leads into the system.
+                  </p>
+                </div>
+                <button
+                  onClick={handleDownloadLeadsCsv}
+                  className="w-full py-2 px-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download CSV Template</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Architecture & Flow */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
+            <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center space-x-2">
+              <Zap className="w-5 h-5 text-amber-500" />
+              <span>End-to-End Enterprise CRM Lifecycle Flow</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-black uppercase text-blue-600 tracking-wider">Step 1</span>
+                  <h4 className="font-bold text-slate-900 text-xs mt-1 mb-2">Lead Capture</h4>
+                  <p className="text-[11px] text-slate-600 leading-normal">
+                    Inbound webhooks receive name, email, phone, company & requirements from any platform.
+                  </p>
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-200 text-[10px] text-slate-500 font-mono">
+                  HTTP POST /api/v1/crm/lead-channels/webhook/
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-black uppercase text-indigo-600 tracking-wider">Step 2</span>
+                  <h4 className="font-bold text-slate-900 text-xs mt-1 mb-2">AI Scoring & Dedupe</h4>
+                  <p className="text-[11px] text-slate-600 leading-normal">
+                    Automated scoring algorithm checks lead value, detects duplicates by email, and sets priority.
+                  </p>
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-200 text-[10px] text-slate-500 font-mono">
+                  Dedupe by Email & Phone
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-black uppercase text-purple-600 tracking-wider">Step 3</span>
+                  <h4 className="font-bold text-slate-900 text-xs mt-1 mb-2">Auto-Routing</h4>
+                  <p className="text-[11px] text-slate-600 leading-normal">
+                    Leads are routed to sales reps using round-robin or mapped campaign channels with instant notifications.
+                  </p>
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-200 text-[10px] text-slate-500 font-mono">
+                  Auto-Assign + Notification
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider">Step 4</span>
+                  <h4 className="font-bold text-slate-900 text-xs mt-1 mb-2">Pipeline Tracking</h4>
+                  <p className="text-[11px] text-slate-600 leading-normal">
+                    Deals move visually through Kanban: New &rarr; Contacted &rarr; Qualified &rarr; Proposal &rarr; Won.
+                  </p>
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-200 text-[10px] text-slate-500 font-mono">
+                  Kanban Stages & Values
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] font-black uppercase text-emerald-600 tracking-wider">Step 5</span>
+                  <h4 className="font-bold text-slate-900 text-xs mt-1 mb-2">1-Click Conversion</h4>
+                  <p className="text-[11px] text-slate-600 leading-normal">
+                    Won deals are instantly converted into a Customer Account and linked GST Commercial Invoices.
+                  </p>
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-200 text-[10px] text-slate-500 font-mono">
+                  Lead &rarr; Customer &rarr; Invoicing
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Code Samples */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+            <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base flex items-center space-x-2">
+                  <Code className="w-5 h-5 text-blue-600" />
+                  <span>Integration Code Snippets</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Copy and paste into your website backend, landing page script, or serverless function.
+                </p>
+              </div>
+
+              {/* Code Tab Switcher */}
+              <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl">
+                {(['html', 'curl', 'js', 'python', 'php'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setSelectedCodeTab(tab)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition cursor-pointer ${
+                      selectedCodeTab === tab
+                        ? 'bg-white text-blue-600 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {tab === 'html' ? 'HTML Form' : tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Code Box */}
+            <div className="bg-slate-950 p-5 font-mono text-xs text-slate-200 relative">
+              <button
+                onClick={() => {
+                  let textToCopy = '';
+                  if (selectedCodeTab === 'html') {
+                    textToCopy = `<form action="http://localhost:8000/api/v1/crm/lead-channels/webhook/" method="POST">\n  <input type="text" name="name" placeholder="Full Name" required />\n  <input type="email" name="email" placeholder="Email" required />\n  <input type="tel" name="phone" placeholder="Phone" required />\n  <input type="text" name="company_name" placeholder="Company" />\n  <input type="hidden" name="source" value="Website Contact Form" />\n  <button type="submit">Submit Request</button>\n</form>`;
+                  } else if (selectedCodeTab === 'curl') {
+                    textToCopy = `curl -X POST "http://localhost:8000/api/v1/crm/lead-channels/webhook/" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "name": "Rajesh Mohanty",\n    "email": "rajesh@kalingasteel.com",\n    "phone": "+91 9876543210",\n    "company_name": "Kalinga Steels & Power Ltd",\n    "source": "Website Contact Form",\n    "notes": "Interested in ERP Enterprise license"\n  }'`;
+                  } else if (selectedCodeTab === 'js') {
+                    textToCopy = `fetch('http://localhost:8000/api/v1/crm/lead-channels/webhook/', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({\n    name: 'Rajesh Mohanty',\n    email: 'rajesh@kalingasteel.com',\n    phone: '+91 9876543210',\n    company_name: 'Kalinga Steels & Power Ltd',\n    source: 'Landing Page',\n    notes: 'Requested product demo'\n  })\n})\n.then(res => res.json())\n.then(data => console.log('Lead Captured:', data));`;
+                  } else if (selectedCodeTab === 'python') {
+                    textToCopy = `import requests\n\nurl = "http://localhost:8000/api/v1/crm/lead-channels/webhook/"\npayload = {\n    "name": "Rajesh Mohanty",\n    "email": "rajesh@kalingasteel.com",\n    "phone": "+91 9876543210",\n    "company_name": "Kalinga Steels & Power Ltd",\n    "source": "Python Backend API",\n    "notes": "Enterprise defense inquiry"\n}\nresponse = requests.post(url, json=payload)\nprint(response.json())`;
+                  } else if (selectedCodeTab === 'php') {
+                    textToCopy = `<?php\n$url = "http://localhost:8000/api/v1/crm/lead-channels/webhook/";\n$data = [\n  "name" => $_POST["name"],\n  "email" => $_POST["email"],\n  "phone" => $_POST["phone"],\n  "company_name" => $_POST["company"],\n  "source" => "WordPress Contact Form"\n];\n\n$options = [\n  "http" => [\n    "header"  => "Content-type: application/json\\r\\n",\n    "method"  => "POST",\n    "content" => json_encode($data)\n  ]\n];\n$context  = stream_context_create($options);\n$result = file_get_contents($url, false, $context);\n?>`;
+                  }
+
+                  navigator.clipboard.writeText(textToCopy);
+                  setCopiedCode(true);
+                  setTimeout(() => setCopiedCode(false), 2000);
+                }}
+                className="absolute top-4 right-4 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer border border-slate-700"
+              >
+                {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedCode ? 'Copied!' : 'Copy Snippet'}</span>
+              </button>
+
+              <pre className="overflow-x-auto py-2 leading-relaxed text-emerald-300">
+                {selectedCodeTab === 'html' && `<!-- Odias ERP Inbound Webhook Contact Form -->
+<form action="http://localhost:8000/api/v1/crm/lead-channels/webhook/" method="POST">
+  <input type="text" name="name" placeholder="Full Name" required />
+  <input type="email" name="email" placeholder="Email" required />
+  <input type="tel" name="phone" placeholder="Phone" required />
+  <input type="text" name="company_name" placeholder="Company Name" />
+  <input type="hidden" name="source" value="Website Contact Form" />
+  <textarea name="notes" placeholder="Requirement details..."></textarea>
+  <button type="submit">Send Inbound Lead</button>
+</form>`}
+
+                {selectedCodeTab === 'curl' && `# Test Inbound Lead Webhook via cURL
+curl -X POST "http://localhost:8000/api/v1/crm/lead-channels/webhook/" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Rajesh Mohanty",
+    "email": "rajesh@kalingasteel.com",
+    "phone": "+91 9876543210",
+    "company_name": "Kalinga Steels & Power Ltd",
+    "source": "Website Contact Form",
+    "notes": "Interested in ERP Enterprise license for 150 employees"
+  }'`}
+
+                {selectedCodeTab === 'js' && `// Modern JavaScript / TypeScript Fetch Example
+fetch('http://localhost:8000/api/v1/crm/lead-channels/webhook/', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'Rajesh Mohanty',
+    email: 'rajesh@kalingasteel.com',
+    phone: '+91 9876543210',
+    company_name: 'Kalinga Steels & Power Ltd',
+    source: 'Website Landing Page',
+    notes: 'Requested immediate callback for GST ERP deployment'
+  })
+})
+.then(response => response.json())
+.then(data => {
+  console.log('Lead ingested successfully:', data);
+  alert('Thank you! Our sales team has received your inquiry.');
+})
+.catch(error => console.error('Ingestion error:', error));`}
+
+                {selectedCodeTab === 'python' && `# Python Requests Library
+import requests
+
+webhook_url = "http://localhost:8000/api/v1/crm/lead-channels/webhook/"
+
+lead_data = {
+    "name": "Rajesh Mohanty",
+    "email": "rajesh@kalingasteel.com",
+    "phone": "+91 9876543210",
+    "company_name": "Kalinga Steels & Power Ltd",
+    "source": "Python Backend API",
+    "notes": "Enterprise defense inquiry and GST compliance audit"
+}
+
+response = requests.post(webhook_url, json=lead_data)
+print("Status Code:", response.status_code)
+print("Response JSON:", response.json())`}
+
+                {selectedCodeTab === 'php' && `<?php
+// WordPress / PHP Contact Form Handler
+$webhook_url = "http://localhost:8000/api/v1/crm/lead-channels/webhook/";
+
+$lead_payload = [
+    "name"         => sanitize_text_field($_POST["full_name"]),
+    "email"        => sanitize_email($_POST["email"]),
+    "phone"        => sanitize_text_field($_POST["phone"]),
+    "company_name" => sanitize_text_field($_POST["company"]),
+    "source"       => "WordPress Contact Form 7",
+    "notes"        => sanitize_textarea_field($_POST["message"])
+];
+
+$response = wp_remote_post($webhook_url, [
+    "headers" => ["Content-Type" => "application/json"],
+    "body"    => json_encode($lead_payload)
+]);
+?>`}
+              </pre>
+            </div>
+          </div>
+
+          {/* Integration FAQs & Step-by-Step Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
+              <h4 className="font-bold text-slate-900 text-sm mb-3 flex items-center space-x-2">
+                <Globe className="w-4 h-4 text-blue-600" />
+                <span>How to connect WordPress, Elementor & CF7</span>
+              </h4>
+              <ol className="text-xs text-slate-600 space-y-2 list-decimal list-inside">
+                <li>Install the free <strong>Webhooks for Contact Form 7</strong> or <strong>Elementor Webhook Action</strong>.</li>
+                <li>In Form Actions, select <strong>Webhook</strong> &rarr; Add Action.</li>
+                <li>Paste your Odias ERP webhook URL: <code className="bg-slate-100 text-blue-700 px-1 py-0.5 rounded">http://&lt;domain&gt;/api/v1/crm/lead-channels/webhook/</code></li>
+                <li>Map form fields: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">name</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">email</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">phone</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">company_name</code>.</li>
+                <li>Submit a test inquiry. The lead will appear in your CRM Pipeline immediately with realtime notifications!</li>
+              </ol>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
+              <h4 className="font-bold text-slate-900 text-sm mb-3 flex items-center space-x-2">
+                <Share2 className="w-4 h-4 text-indigo-600" />
+                <span>How to connect Meta Lead Ads (FB & Insta)</span>
+              </h4>
+              <ol className="text-xs text-slate-600 space-y-2 list-decimal list-inside">
+                <li>In Meta Business Suite, navigate to <strong>Instant Forms & Lead Center</strong>.</li>
+                <li>Configure <strong>CRM Integration & Webhooks</strong>.</li>
+                <li>Select Webhook / Zapier endpoint and enter the Odias ERP webhook endpoint.</li>
+                <li>Match questions to standard fields (<code className="bg-slate-100 px-1 py-0.5 rounded font-mono">full_name</code> &rarr; <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">name</code>).</li>
+                <li>When an ad clicker submits the form on Instagram or Facebook, the lead is ingested in under 2 seconds!</li>
+              </ol>
+            </div>
           </div>
         </div>
       )}

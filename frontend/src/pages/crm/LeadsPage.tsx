@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Target, Plus, Search, Filter, Phone, Mail, ArrowRight,
   CheckCircle2, Building2, DollarSign, Eye, Edit3, Trash2,
   ArrowLeft, Award, Clock, FileText, UserCheck, Shield,
   MessageSquare, Calendar, ChevronRight, Send, AlertCircle,
-  Sparkles, History, UserPlus, PhoneCall, RotateCcw, X
+  Sparkles, History, UserPlus, PhoneCall, RotateCcw, X, BookOpen, Radio
 } from 'lucide-react';
 import { api } from '../../api/client';
 import { useRealtime } from '../../context/RealtimeContext';
@@ -77,6 +78,7 @@ const DEFAULT_LEADS: any[] = [
 ];
 
 export const LeadsPage: React.FC = () => {
+  const navigate = useNavigate();
   const { emitEvent, subscribe } = useRealtime();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -752,6 +754,20 @@ export const LeadsPage: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-2">
+          <button
+            onClick={() => navigate('/app/crm/webhooks')}
+            className="inline-flex items-center px-3.5 py-2 rounded-xl bg-cyan-50 border border-cyan-200 text-cyan-700 font-bold text-xs hover:bg-cyan-100 shadow-2xs transition-all cursor-pointer"
+          >
+            <Radio className="w-4 h-4 mr-1.5 text-cyan-600" />
+            <span>Custom Webhooks</span>
+          </button>
+          <button
+            onClick={() => navigate('/app/crm/docs')}
+            className="inline-flex items-center px-3.5 py-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-xs hover:bg-indigo-100 shadow-2xs transition-all cursor-pointer"
+          >
+            <BookOpen className="w-4 h-4 mr-1.5 text-indigo-600" />
+            <span>How to Use CRM & Docs</span>
+          </button>
           <button
             onClick={() => setAddModalOpen(true)}
             className="inline-flex items-center px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 shadow-sm transition-all cursor-pointer"

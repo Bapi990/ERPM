@@ -8,14 +8,16 @@ import {
   Clock, User, Shield, CreditCard, ChevronRight, ChevronsLeft,
   FolderKanban, Laptop, LifeBuoy, Award, FileCheck, Layers,
   HelpCircle, Activity, CheckCircle2, ArrowUpCircle, Settings, Sliders, Hash, UserCheck, KeyRound,
-  Play, AlertTriangle, FileSpreadsheet, Calculator, ExternalLink, Camera, Inbox, TrendingUp
+  Play, AlertTriangle, FileSpreadsheet, Calculator, ExternalLink, Camera, Inbox, TrendingUp,
+  Save, Upload, Phone, Mail, RefreshCw, Radio, BookOpen
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useRealtime } from '../../context/RealtimeContext';
 import { api } from '../../api/client';
-import type { NotificationItem, RoleCode } from '../../types';
+import { Modal } from '../common/Modal';
+import type { NotificationItem, RoleCode, User as UserType } from '../../types';
 import { isPathAllowedForRole, isPathAllowedForUser } from '../../utils/rbacMatrix';
-import { formatTime } from '../../utils/timeFormat';
+import { formatTime, useTimeFormat } from '../../utils/timeFormat';
 
 interface NavItem {
   label: string;
@@ -40,20 +42,73 @@ interface NavGroup {
 }
 
 export const AppShell: React.FC = () => {
-  const { user, logout, demoSwitch, hasPermission } = useAuth();
+  const { user, logout, demoSwitch, hasPermission, updateUser } = useAuth();
   const { isConnected, latencyMs, emitEvent, subscribe } = useRealtime();
+  const { timeFormat: systemTimeFormat, setTimeFormat: setSystemTimeFormat } = useTimeFormat();
   const navigate = useNavigate();
   const location = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [roleSwitcherOpen, setRoleSwitcherOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [navSearch, setNavSearch] = useState('');
   const [rbacRevision, setRbacRevision] = useState(0);
+
+  // User Work Status ('online' | 'busy' | 'wfh' | 'away')
+  const [userWorkStatus, setUserWorkStatus] = useState<'online' | 'busy' | 'wfh' | 'away'>(() => {
+    try {
+      return (localStorage.getItem(`odias_user_status_${user?.email}`) as any) || 'online';
+    } catch (e) {
+      return 'online';
+    }
+  });
+
+  // Profile modal edit states
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editAvatarUrl, setEditAvatarUrl] = useState('');
+  const [editStatus, setEditStatus] = useState<'online' | 'busy' | 'wfh' | 'away'>('online');
+  const [editTimeFormat, setEditTimeFormat] = useState<'12h' | '24h'>('12h');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
+
+  // Close dropdowns on outside click or Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
+      ) {
+        setProfileDropdownOpen(false);
+      }
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target as Node)
+      ) {
+        setNotificationsOpen(false);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setProfileDropdownOpen(false);
+        setNotificationsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
 
   // Realtime Company Branding & Profile State
   const [companyProfile, setCompanyProfile] = useState<{
@@ -224,23 +279,6 @@ export const AppShell: React.FC = () => {
     }
   };
 
-  const handleRoleSwitch = async (code: RoleCode) => {
-    setRoleSwitcherOpen(false);
-    await demoSwitch(code);
-    emitEvent('role_switch', 'Workspace Role Switched', `Switched active role context to ${code.replace(/_/g, ' ')}`, 'info');
-    navigate('/app/dashboard');
-  };
-
-  const demoRoles: { code: RoleCode; label: string; desc: string }[] = [
-    { code: 'super_admin', label: 'Super Admin', desc: 'Full Enterprise Control' },
-    { code: 'sub_admin', label: 'Sub Admin', desc: 'Operations Sub-Admin' },
-    { code: 'hr_manager', label: 'HR Manager', desc: 'People Operations & HRMS' },
-    { code: 'manager', label: 'Team Manager', desc: 'Department & Team Supervisor' },
-    { code: 'sales', label: 'Sales Director', desc: 'CRM & Accounts' },
-    { code: 'accounts', label: 'Finance Controller', desc: 'Invoicing & Ledgers' },
-    { code: 'employee', label: 'Employee (Associate Staff)', desc: 'General Staff Self-Service' },
-  ];
-
   // All 11 Navigation Groups in Title Case matching reference design
   const navigationGroups: NavGroup[] = [
     {
@@ -277,7 +315,8 @@ export const AppShell: React.FC = () => {
         { label: 'HR Directory', path: '/app/hrms/hr', icon: Shield, onlyForSuperAdmin: true, badge: 'HR' },
         { label: 'Managers Directory', path: '/app/hrms/managers', icon: UserCheck, hideForManager: true, hideForEmployee: true, badge: 'Manager' },
         { label: 'Employee Directory', path: '/app/hrms/employees', icon: Users, badge: 'Staff' },
-        { label: 'Department & Designation', path: '/app/hrms/departments', icon: Building2 },
+        { label: 'Departments & Hierarchy', path: '/app/hrms/departments', icon: Building2 },
+        { label: 'Designations & Roles', path: '/app/hrms/designations', icon: Award },
         { label: 'Organization Hierarchy & Lifecycle Tree', path: '/app/hrms/hierarchy', icon: ArrowUpCircle, badge: 'Org Chart' },
         { label: 'Live Attendance Register', path: '/app/hrms/attendance', icon: Clock },
         { label: 'Leave Approval Queue', path: '/app/hrms/leave', icon: Check },
@@ -333,7 +372,9 @@ export const AppShell: React.FC = () => {
         { label: 'Sales Team Performance', path: '/app/crm/performance', icon: Activity },
         { label: 'Customer Complaints', path: '/app/crm/complaints', icon: HelpCircle },
         { label: 'Customer Feedback', path: '/app/crm/feedback', icon: Sparkles },
+        { label: 'Custom Webhooks', path: '/app/crm/webhooks', icon: Radio, badge: 'Realtime' },
         { label: 'Config (API & Channels)', path: '/app/crm/config', icon: Sliders, badge: 'API' },
+        { label: 'Documentation & Guide', path: '/app/crm/docs', icon: BookOpen, badge: 'Docs' },
       ],
     },
     {
@@ -586,6 +627,150 @@ export const AppShell: React.FC = () => {
     return 'Super Admin';
   }, [user]);
 
+  // Compute user avatar photo (custom uploaded avatar > company owner photo > fallback initials)
+  const userAvatarPhoto = useMemo(() => {
+    if (user?.avatar_url) return user.avatar_url;
+    try {
+      const savedOverride = localStorage.getItem(`odias_user_override_${user?.email}`);
+      if (savedOverride) {
+        const parsed = JSON.parse(savedOverride);
+        if (parsed.avatar_url) return parsed.avatar_url;
+      }
+    } catch (e) {}
+    if (isSuperAdmin && companyProfile?.company_photo_url) return companyProfile.company_photo_url;
+    return null;
+  }, [user, isSuperAdmin, companyProfile]);
+
+  const openProfileSettingsModal = () => {
+    setEditFirstName(user?.first_name || '');
+    setEditLastName(user?.last_name || '');
+    setEditPhone(user?.phone || '');
+    setEditAvatarUrl(userAvatarPhoto || '');
+    setEditStatus(userWorkStatus);
+    setEditTimeFormat(systemTimeFormat);
+    setProfileSaveSuccess(false);
+    setProfileModalOpen(true);
+  };
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setEditAvatarUrl(reader.result);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveProfileSettings = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setSavingProfile(true);
+    try {
+      const updatedData: Partial<UserType> = {
+        first_name: editFirstName.trim(),
+        last_name: editLastName.trim(),
+        full_name: `${editFirstName.trim()} ${editLastName.trim()}`.trim(),
+        phone: editPhone.trim(),
+        avatar_url: editAvatarUrl,
+      };
+
+      if (updateUser) {
+        updateUser(updatedData);
+      }
+
+      setUserWorkStatus(editStatus);
+      try {
+        localStorage.setItem(`odias_user_status_${user?.email}`, editStatus);
+      } catch (e) {}
+
+      if (editTimeFormat !== systemTimeFormat) {
+        setSystemTimeFormat(editTimeFormat);
+      }
+
+      emitEvent(
+        'profile_updated',
+        'Profile Settings Updated',
+        `${updatedData.full_name || 'User'} updated their profile & preferences`,
+        'success'
+      );
+
+      window.dispatchEvent(
+        new CustomEvent('odias_profile_updated', {
+          detail: updatedData,
+        })
+      );
+
+      setProfileSaveSuccess(true);
+      setTimeout(() => {
+        setProfileSaveSuccess(false);
+        setProfileModalOpen(false);
+      }, 900);
+    } catch (err) {
+      console.error('Failed to save profile settings:', err);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const statusConfig: Record<
+    'online' | 'busy' | 'wfh' | 'away',
+    { label: string; dotClass: string; badgeClass: string }
+  > = {
+    online: {
+      label: 'Available (In Office)',
+      dotClass: 'bg-emerald-500',
+      badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    },
+    busy: {
+      label: 'In a Meeting',
+      dotClass: 'bg-amber-500',
+      badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+    },
+    wfh: {
+      label: 'Work From Home (Remote)',
+      dotClass: 'bg-blue-500',
+      badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+    },
+    away: {
+      label: 'On Break / Away',
+      dotClass: 'bg-slate-400',
+      badgeClass: 'bg-slate-100 text-slate-700 border-slate-300',
+    },
+  };
+
+  const getRoleBadge = (roleCode?: string, roleName?: string) => {
+    switch (roleCode) {
+      case 'super_admin':
+        return {
+          title: roleName || 'Super Admin',
+          cls: 'bg-indigo-100 text-indigo-700 border border-indigo-200 font-black',
+        };
+      case 'hr_manager':
+        return {
+          title: roleName || 'HR Manager',
+          cls: 'bg-purple-100 text-purple-700 border border-purple-200 font-bold',
+        };
+      case 'manager':
+        return {
+          title: roleName || 'Team Manager',
+          cls: 'bg-amber-100 text-amber-700 border border-amber-200 font-bold',
+        };
+      case 'accounts':
+        return {
+          title: roleName || 'Finance Controller',
+          cls: 'bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold',
+        };
+      default:
+        return {
+          title: roleName || 'Employee',
+          cls: 'bg-blue-100 text-blue-700 border border-blue-200 font-bold',
+        };
+    }
+  };
+
   return (
     <div className="h-screen w-screen overflow-hidden flex bg-[#f8fafc] font-sans antialiased text-slate-900 select-none">
       {/* 1. LEFT SIDEBAR: Full Height (h-screen) with Gorgeous Deep Executive Slate Palette */}
@@ -805,17 +990,6 @@ export const AppShell: React.FC = () => {
 
           {/* Right Header Status & Actions */}
           <div className="flex items-center space-x-2 sm:space-x-3">
-            {/* Realtime Live Sync Status Pill */}
-            <div className="hidden sm:flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] font-mono">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
-                }`}
-              />
-              <span className="text-slate-500 font-medium">Sync:</span>
-              <span className="font-bold text-emerald-600">{latencyMs}ms</span>
-            </div>
-
             {/* Quick Mark Attendance Action (Hidden for Super Admin / Company Owner) */}
             {user?.role_code !== 'super_admin' && (
               <NavLink
@@ -828,70 +1002,10 @@ export const AppShell: React.FC = () => {
               </NavLink>
             )}
 
-            {/* View Public Showcase Website */}
-            <a
-              href="/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden lg:inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200 transition-colors"
-              title="Open Odias ERP Showcase Website"
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
-              <span>Showcase Site</span>
-            </a>
-
-            {/* Instant Role Switcher Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setRoleSwitcherOpen(!roleSwitcherOpen);
-                  setNotificationsOpen(false);
-                }}
-                className="hidden md:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-blue-50/70 hover:bg-blue-100/80 border border-blue-200/80 text-[#1877f2] text-xs font-semibold transition-all cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#1877f2]" />
-                <span>Role: <strong className="font-extrabold">{user?.role_name || 'Super Admin'}</strong></span>
-                <ArrowRightLeft className="w-3 h-3 text-[#1877f2] ml-1" />
-              </button>
-
-              {roleSwitcherOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-4 py-2.5 border-b border-slate-100">
-                    <p className="text-xs font-bold text-slate-900">Instant Demo Role Switcher</p>
-                    <p className="text-[11px] text-slate-500">Evaluate dynamic RBAC & permission reshaping in real-time</p>
-                  </div>
-                  <div className="p-2 space-y-1">
-                    {demoRoles.map((r) => (
-                      <button
-                        key={r.code}
-                        onClick={() => handleRoleSwitch(r.code)}
-                        className={`w-full flex items-start text-left px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer ${
-                          user?.role_code === r.code
-                            ? 'bg-blue-50 text-[#1877f2] border border-blue-200 font-bold'
-                            : 'hover:bg-slate-50 text-slate-700'
-                        }`}
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-900">{r.label}</span>
-                            {user?.role_code === r.code && <Check className="w-3.5 h-3.5 text-[#1877f2]" />}
-                          </div>
-                          <p className="text-[11px] text-slate-400 mt-0.5">{r.desc}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Notifications Button with Red Notification Count Badge */}
-            <div className="relative">
+            <div className="relative" ref={notificationsRef}>
               <button
-                onClick={() => {
-                  setNotificationsOpen(!notificationsOpen);
-                  setRoleSwitcherOpen(false);
-                }}
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
                 className="relative w-9 h-9 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-600 transition-colors cursor-pointer"
                 title="Notifications"
               >
@@ -980,51 +1094,111 @@ export const AppShell: React.FC = () => {
               )}
             </div>
 
-            {/* Help Button */}
-            <button
-              onClick={() => navigate('/app/support/tickets')}
-              className="w-9 h-9 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/80 flex items-center justify-center text-slate-600 transition-colors cursor-pointer"
-              title="Help & Support"
-            >
-              <HelpCircle className="w-4 h-4" />
-            </button>
 
-            {/* User Profile Avatar & Name */}
-            <div className="flex items-center space-x-2.5 pl-2 border-l border-slate-200">
-              <div className="w-9 h-9 rounded-full overflow-hidden bg-[#1877f2] text-white flex items-center justify-center text-xs font-extrabold shadow-sm shadow-blue-500/20 shrink-0">
-                {isSuperAdmin && companyProfile?.company_photo_url ? (
-                  <img
-                    src={companyProfile.company_photo_url}
-                    alt={userDisplayName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  userInitials
-                )}
-              </div>
-              <div className="hidden sm:flex flex-col text-left">
-                <span className="text-xs font-bold text-slate-900 leading-tight">
-                  {userDisplayName}
-                </span>
-                <span className="text-[11px] text-slate-400 leading-tight">
-                  {user?.role_name || 'Super Admin'}
-                </span>
-              </div>
+            {/* User Profile Container & Dropdown */}
+            <div className="relative pl-2 border-l border-slate-200" ref={profileDropdownRef}>
               <button
-                onClick={logout}
-                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                title="Sign Out"
+                onClick={() => setProfileDropdownOpen((prev) => !prev)}
+                className="flex items-center space-x-2.5 p-1 sm:px-2 rounded-full hover:bg-slate-100/90 active:bg-slate-200/60 transition-all border border-transparent hover:border-slate-200 cursor-pointer group"
+                aria-expanded={profileDropdownOpen}
+                aria-haspopup="true"
+                title="Account, Profile Settings & Logout"
               >
-                <LogOut className="w-4 h-4" />
+                <div className="relative">
+                  <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-tr from-[#1877f2] to-indigo-600 text-white flex items-center justify-center text-xs font-extrabold shadow-2xs ring-2 ring-white">
+                    {userAvatarPhoto ? (
+                      <img
+                        src={userAvatarPhoto}
+                        alt={userDisplayName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      userInitials
+                    )}
+                  </div>
+                  {/* Status indicator dot */}
+                  <span
+                    className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ${
+                      statusConfig[userWorkStatus]?.dotClass || 'bg-emerald-500'
+                    } ring-2 ring-white shadow-2xs`}
+                  />
+                </div>
+                <div className="hidden sm:flex flex-col text-left">
+                  <span className="text-xs font-bold text-slate-900 group-hover:text-[#1877f2] transition-colors leading-tight">
+                    {userDisplayName}
+                  </span>
+                  <span className="text-[11px] text-slate-400 leading-tight">
+                    {user?.role_name || (isSuperAdmin ? 'Super Admin' : 'Employee')}
+                  </span>
+                </div>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 transition-transform duration-200 ${
+                    profileDropdownOpen ? 'rotate-180 text-[#1877f2]' : ''
+                  }`}
+                />
               </button>
+
+              {/* Compact Profile Dropdown Menu */}
+              {profileDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 sm:w-60 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  {/* User info */}
+                  <div className="px-3.5 py-2.5 border-b border-slate-100">
+                    <p className="text-xs font-bold text-slate-900 truncate">
+                      {userDisplayName}
+                    </p>
+                    <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                      {user?.email || 'user@odias.com'}
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      <span className="inline-block px-2 py-0.5 bg-blue-50 text-[#1877f2] border border-blue-100 rounded text-[10px] font-bold">
+                        {user?.role_name || (isSuperAdmin ? 'Super Admin' : 'Employee')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions: Profile */}
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setProfileDropdownOpen(false);
+                        openProfileSettingsModal();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-[#1877f2] hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                    >
+                      <User className="w-4 h-4 text-slate-400" />
+                      <span>Profile Settings</span>
+                    </button>
+                  </div>
+
+                  {/* Logout Button */}
+                  <div className="pt-1 border-t border-slate-100">
+                    <button
+                      onClick={() => {
+                        setProfileDropdownOpen(false);
+                        logout();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
+                    >
+                      <LogOut className="w-4 h-4 text-rose-500" />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
-        {/* Mobile Slide-Out Drawer */}
+        {/* Mobile Slide-Out Drawer with Backdrop Dismiss */}
         {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex">
-            <div className="w-80 bg-[#0f172a] text-white h-full p-4 flex flex-col shadow-2xl overscroll-contain border-r border-slate-800">
+          <div
+            onClick={() => setMobileMenuOpen(false)}
+            className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex animate-in fade-in duration-150"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-[85vw] max-w-xs sm:w-80 bg-[#0f172a] text-white h-full p-4 flex flex-col shadow-2xl overscroll-contain border-r border-slate-800 animate-in slide-in-from-left duration-200"
+            >
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 rounded-xl bg-[#1877f2] text-white flex items-center justify-center font-bold">
@@ -1105,6 +1279,290 @@ export const AppShell: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Realtime Profile Settings Modal (Available from Header Dropdown across all panels) */}
+      <Modal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+        title="My Profile & Account Settings"
+        subtitle="Manage your personal details, profile picture, realtime status and display preferences"
+        size="lg"
+      >
+        <form onSubmit={handleSaveProfileSettings} className="space-y-4 p-1">
+          {/* Avatar & Photo Picker */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50/60 via-indigo-50/40 to-slate-50 border border-blue-100/70">
+            <div className="relative group shrink-0">
+              <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-tr from-[#1877f2] to-indigo-600 text-white flex items-center justify-center text-xl font-black shadow-md ring-4 ring-white">
+                {editAvatarUrl ? (
+                  <img
+                    src={editAvatarUrl}
+                    alt={userDisplayName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  userInitials
+                )}
+              </div>
+              <label
+                htmlFor="profile-avatar-upload"
+                className="absolute inset-0 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] font-bold cursor-pointer transition-opacity"
+              >
+                <Camera className="w-5 h-5 mb-0.5" />
+                <span>Change</span>
+              </label>
+              <input
+                id="profile-avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarFileChange}
+                className="hidden"
+              />
+            </div>
+            <div className="text-center sm:text-left min-w-0 flex-1">
+              <p className="text-sm font-bold text-slate-900">{userDisplayName}</p>
+              <p className="text-xs text-slate-500">{user?.email}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 justify-center sm:justify-start">
+                <label
+                  htmlFor="profile-avatar-upload-btn"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-2xs cursor-pointer"
+                >
+                  <Upload className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Upload Photo</span>
+                </label>
+                <input
+                  id="profile-avatar-upload-btn"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarFileChange}
+                  className="hidden"
+                />
+                {editAvatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setEditAvatarUrl('')}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 cursor-pointer"
+                  >
+                    Remove Photo
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                Upload JPG, PNG or WebP image. Updates immediately in real-time.
+              </p>
+            </div>
+          </div>
+
+          {/* Form fields: First Name & Last Name */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                First Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={editFirstName}
+                onChange={(e) => setEditFirstName(e.target.value)}
+                required
+                placeholder="Enter first name"
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1877f2]/20 focus:border-[#1877f2] transition-all bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Last Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={editLastName}
+                onChange={(e) => setEditLastName(e.target.value)}
+                required
+                placeholder="Enter last name"
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1877f2]/20 focus:border-[#1877f2] transition-all bg-white"
+              />
+            </div>
+          </div>
+
+          {/* Email (Read-only) & Phone Number */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Corporate Email Address
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="email"
+                  value={user?.email || ''}
+                  disabled
+                  className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-500 bg-slate-50 cursor-not-allowed"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Managed by enterprise administration</span>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Phone Number
+              </label>
+              <div className="relative">
+                <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="tel"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1877f2]/20 focus:border-[#1877f2] transition-all bg-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Work Status Selection */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Live Work Status (Realtime Presence)
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {(['online', 'busy', 'wfh', 'away'] as const).map((st) => (
+                <button
+                  type="button"
+                  key={st}
+                  onClick={() => setEditStatus(st)}
+                  className={`p-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    editStatus === st
+                      ? 'border-[#1877f2] bg-blue-50 text-[#1877f2] shadow-2xs ring-1 ring-[#1877f2]'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${statusConfig[st].dotClass}`} />
+                  <span>{st === 'online' ? 'Office' : st === 'busy' ? 'Meeting' : st === 'wfh' ? 'WFH' : 'Away'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Time Display Setting (12h vs 24h) */}
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#1877f2]" />
+                <span className="text-xs font-bold text-slate-900">System Time Format Preference</span>
+              </div>
+              <span className="text-[11px] font-mono text-slate-500 font-semibold">
+                Live: {formatTime(new Date(), { forceFormat: editTimeFormat, includeSeconds: true })}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+              <label
+                onClick={() => setEditTimeFormat('12h')}
+                className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all ${
+                  editTimeFormat === '12h'
+                    ? 'border-[#1877f2] bg-white text-[#1877f2] shadow-2xs'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100/60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                    editTimeFormat === '12h' ? 'border-[#1877f2] bg-[#1877f2]' : 'border-slate-300'
+                  }`}>
+                    {editTimeFormat === '12h' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <span>12-Hour Clock (1 to 12 AM / PM)</span>
+                </div>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-mono">09:30 AM</span>
+              </label>
+
+              <label
+                onClick={() => setEditTimeFormat('24h')}
+                className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all ${
+                  editTimeFormat === '24h'
+                    ? 'border-[#1877f2] bg-white text-[#1877f2] shadow-2xs'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100/60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                    editTimeFormat === '24h' ? 'border-[#1877f2] bg-[#1877f2]' : 'border-slate-300'
+                  }`}>
+                    {editTimeFormat === '24h' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  </div>
+                  <span>24-Hour Clock (00 to 23)</span>
+                </div>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-mono">18:30</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Role & Access Info */}
+          <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+            <span className="flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-slate-400" />
+              Role: <strong className="text-slate-800">{user?.role_name || (isSuperAdmin ? 'Super Admin' : 'Employee')}</strong>
+            </span>
+            {user?.employee_id && (
+              <span>ID: <strong className="font-mono text-slate-800">{user.employee_id}</strong></span>
+            )}
+          </div>
+
+          {/* Success Banner if saved */}
+          {profileSaveSuccess && (
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-200">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Profile settings saved and synced in real-time across the enterprise!</span>
+            </div>
+          )}
+
+          {/* Modal Action Buttons */}
+          <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => {
+                setProfileModalOpen(false);
+                if (isSuperAdmin) {
+                  navigate('/app/workspace/settings');
+                } else {
+                  navigate('/app/workspace/profile');
+                }
+              }}
+              className="text-xs text-[#1877f2] hover:underline font-bold cursor-pointer inline-flex items-center gap-1"
+            >
+              <span>Go to Full Workspace Page</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setProfileModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={savingProfile}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1877f2] hover:bg-blue-600 active:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {savingProfile ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : profileSaveSuccess ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Saved!</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Profile Changes</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

@@ -306,89 +306,72 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
     };
   }, [subscribe]);
 
-  // Comprehensive Form State (Supports all fields requested by user)
+  // Comprehensive Form State (No fake pre-filled details)
   const initialFormState = {
-    // Step 1: Personal
+    // Personal Profile
     first_name: '',
     last_name: '',
     full_name: '',
     email: '',
     phone: '',
     alternate_phone: '',
-    date_of_birth: '1995-05-15',
+    date_of_birth: '',
     gender: 'Male',
     avatar_url: '',
 
-    // Step 2: Placement & Shift
+    // Placement & Shift
     employee_id: '',
-    branch: 'Software',
-    department: 'Software',
-    designation: 'Software Engineer',
+    branch: '',
+    department: '',
+    designation: '',
     work_shift: 'Day shift (09:00 - 18:00)',
     weekly_off: '--- Use Shift/Company Default ---',
     date_of_joining: new Date().toISOString().split('T')[0],
     employment_type: 'Full Time' as any,
     employment_status: 'active' as any,
 
-    // Step 3: Role, Permissions & Dynamic Hierarchy
+    // Role, Permissions & Dynamic Hierarchy
     role_code: 'employee',
     role_name: 'Employee (Associate Staff)',
     assigned_hr: '',
     reporting_manager: '',
     permissions: DEFAULT_ROLE_PERMISSIONS['employee'] || [],
 
-    // Step 4: Compensation & Statutory Allowances
-    monthly_ctc: 50000,
-    basic_salary: 25000,
-    hra: 10000,
-    da: 2500,
-    other_allowances: 12500,
+    // Compensation & Statutory Allowances
+    monthly_ctc: 0,
+    basic_salary: 0,
+    hra: 0,
+    da: 0,
+    other_allowances: 0,
     tax_regime: 'New Regime',
     payment_mode: 'Bank Transfer',
     uan_number: '',
     esi_number: '',
-    pf_applicable: true,
-    esi_applicable: true,
+    pf_applicable: false,
+    esi_applicable: false,
 
-    // Step 5: Portal Authentication
+    // Portal Authentication
     password: '',
     confirm_password: '',
 
-    // Step 6: Bank, Address & Emergency Contact
-    bank_name: 'HDFC Bank Ltd',
+    // Bank, Address & Emergency Contact
+    bank_name: '',
     bank_account_number: '',
-    bank_ifsc: 'HDFC0001234',
+    bank_ifsc: '',
     pan_number: '',
     aadhaar_number: '',
     street_address: '',
-    city: 'Bhubaneswar',
-    state: 'Odisha',
-    postal_code: '751024',
+    city: '',
+    state: '',
+    postal_code: '',
     emergency_contact_name: '',
     emergency_contact_phone: '',
   };
 
   const [formData, setFormData] = useState(initialFormState);
 
-  // Documents State
-  const [formDocs, setFormDocs] = useState<EmployeeDocument[]>([
-    {
-      name: 'Aadhaar Card (National ID)',
-      document_type: 'aadhaar',
-      file_name: 'Aadhaar_Document.pdf',
-      file_size: '1.4 MB',
-      upload_date: new Date().toISOString().split('T')[0],
-      status: 'verified',
-    },
-    {
-      name: 'PAN Card (Tax ID)',
-      document_type: 'pan',
-      file_name: 'PAN_Card.pdf',
-      file_size: '850 KB',
-      upload_date: new Date().toISOString().split('T')[0],
-      status: 'verified',
-    },
-  ]);
+  // Documents State (Starts completely empty - no fake documents)
+  const [formDocs, setFormDocs] = useState<EmployeeDocument[]>([]);
 
   useEffect(() => {
     loadData();
@@ -484,12 +467,12 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
   // Add document row with + button
   const handleAddDocumentRow = () => {
     const newDoc: EmployeeDocument = {
-      name: 'Educational Degree / Diploma',
-      document_type: 'degree',
-      file_name: 'Degree_Certificate.pdf',
-      file_size: '1.8 MB',
+      name: '',
+      document_type: 'other',
+      file_name: '',
+      file_size: '',
       upload_date: new Date().toISOString().split('T')[0],
-      status: 'verified',
+      status: 'pending',
     };
     setFormDocs((prev) => [...prev, newDoc]);
   };
@@ -552,24 +535,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
       assigned_hr: mode === 'hr' ? '' : (hrStaff ? hrStaff.id : ''),
       reporting_manager: (mode === 'hr' || mode === 'manager') ? '' : (managerStaff ? managerStaff.id : ''),
     });
-    setFormDocs([
-      {
-        name: 'Aadhaar Card (National ID)',
-        document_type: 'aadhaar',
-        file_name: 'Aadhaar_Document.pdf',
-        file_size: '1.4 MB',
-        upload_date: new Date().toISOString().split('T')[0],
-        status: 'verified',
-      },
-      {
-        name: 'PAN Card (Tax ID)',
-        document_type: 'pan',
-        file_name: 'PAN_Card.pdf',
-        file_size: '850 KB',
-        upload_date: new Date().toISOString().split('T')[0],
-        status: 'verified',
-      },
-    ]);
+    setFormDocs([]);
     setCurrentStep(1);
     setViewMode('add');
   };
@@ -588,72 +554,55 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
       email: emp.email || '',
       phone: emp.phone || '',
       alternate_phone: emp.alternate_phone || '',
-      date_of_birth: emp.date_of_birth || '1995-05-15',
+      date_of_birth: emp.date_of_birth || '',
       gender: emp.gender || 'Male',
       avatar_url: emp.avatar_url || '',
 
       employee_id: emp.employee_id || '',
-      branch: emp.branch_name || emp.branch || 'Software',
-      department: emp.department_name || emp.department || 'Software',
-      designation: emp.designation_title || emp.designation || 'Account manager',
+      branch: emp.branch_name || emp.branch || '',
+      department: emp.department_name || emp.department || '',
+      designation: emp.designation_title || emp.designation || '',
       work_shift: emp.shift_name || 'Day shift (09:00 - 18:00)',
-      weekly_off: emp.weekly_off || '--- Use Shift/Company Default ---',
+      weekly_off: emp.weekly_off || 'Sunday',
       date_of_joining: emp.date_of_joining || new Date().toISOString().split('T')[0],
       employment_type: (emp.employment_type as any) || 'Full Time',
       employment_status: emp.employment_status || 'active',
 
       role_code: emp.role_code || 'employee',
-      role_name: emp.role_name || 'Associate Staff (Standard Access)',
+      role_name: emp.role_name || 'Employee',
       assigned_hr: emp.assigned_hr || '',
       reporting_manager: emp.reporting_manager || '',
       permissions: emp.permissions || DEFAULT_ROLE_PERMISSIONS[emp.role_code || 'employee'] || [],
 
-      monthly_ctc: emp.monthly_ctc || 65000,
-      basic_salary: emp.basic_salary || 32500,
-      hra: emp.hra || 13000,
-      da: emp.da || 3250,
-      other_allowances: emp.other_allowances || 16250,
+      monthly_ctc: Number(emp.monthly_ctc) || 0,
+      basic_salary: Number(emp.basic_salary) || 0,
+      hra: Number(emp.hra) || 0,
+      da: Number(emp.da) || 0,
+      other_allowances: Number(emp.other_allowances) || 0,
       tax_regime: emp.tax_regime || 'New Regime',
       payment_mode: emp.payment_mode || 'Bank Transfer',
-      uan_number: emp.uan_number || '101429810239',
-      esi_number: emp.esi_number || '31-99-10827364-001',
-      pf_applicable: emp.pf_applicable !== false,
-      esi_applicable: emp.esi_applicable !== false,
+      uan_number: emp.uan_number || '',
+      esi_number: emp.esi_number || '',
+      pf_applicable: Boolean(emp.pf_applicable),
+      esi_applicable: Boolean(emp.esi_applicable),
 
       password: '',
       confirm_password: '',
 
-      bank_name: emp.bank_name || 'HDFC Bank Ltd',
+      bank_name: emp.bank_name || '',
       bank_account_number: emp.bank_account_number || '',
-      bank_ifsc: emp.bank_ifsc || 'HDFC0001234',
+      bank_ifsc: emp.bank_ifsc || '',
       pan_number: emp.pan_number || '',
       aadhaar_number: emp.aadhaar_number || '',
-      street_address: emp.street_address || 'Plot 42, Infocity Avenue',
-      city: emp.city || 'Bhubaneswar',
-      state: emp.state || 'Odisha',
-      postal_code: emp.postal_code || '751024',
+      street_address: emp.street_address || '',
+      city: emp.city || '',
+      state: emp.state || '',
+      postal_code: emp.postal_code || '',
       emergency_contact_name: emp.emergency_contact_name || '',
       emergency_contact_phone: emp.emergency_contact_phone || '',
     });
 
-    setFormDocs(emp.documents && emp.documents.length > 0 ? [...emp.documents] : [
-      {
-        name: 'Aadhaar Card (National ID)',
-        document_type: 'aadhaar',
-        file_name: `Aadhaar_${fName}_${lName}.pdf`,
-        file_size: '1.4 MB',
-        upload_date: emp.date_of_joining,
-        status: 'verified',
-      },
-      {
-        name: 'PAN Card (Tax Identification)',
-        document_type: 'pan',
-        file_name: `PAN_${emp.pan_number || 'CARD'}.pdf`,
-        file_size: '850 KB',
-        upload_date: emp.date_of_joining,
-        status: 'verified',
-      },
-    ]);
+    setFormDocs(emp.documents && emp.documents.length > 0 ? [...emp.documents] : []);
 
     setCurrentStep(1);
     setViewMode('edit');
@@ -752,7 +701,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
     const status = getStepStatus(currentStep);
     // If current step is one of the strictly required steps (Step 1, 2, 3, 4, 5) and is incomplete, alert user
     if ([1, 2, 3, 4, 5].includes(currentStep) && !status.isComplete && status.error) {
-      showToast(`⚠️ Step ${currentStep} is incomplete: ${status.error}`);
+      showToast(`⚠️ ${ONBOARDING_STEPS[currentStep - 1]?.title} incomplete: ${status.error}`);
       return;
     }
     setCurrentStep((prev) => Math.min(ONBOARDING_STEPS.length, prev + 1));
@@ -767,7 +716,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
       const status = getStepStatus(stepNum);
       if (!status.isComplete) {
         setCurrentStep(stepNum);
-        showToast(`⚠️ Please complete Step ${stepNum} (${ONBOARDING_STEPS[stepNum - 1]?.title}): ${status.error || 'Required fields missing'}`);
+        showToast(`⚠️ Please complete "${ONBOARDING_STEPS[stepNum - 1]?.title}": ${status.error || 'Required fields missing'}`);
         return;
       }
     }
@@ -956,14 +905,22 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
     },
     {
       key: 'documents_count',
-      header: 'KYC Vault',
+      header: 'KYC Documents',
       accessor: (row) => (row.documents ? row.documents.length : 0),
       render: (row) => {
-        const count = row.documents ? row.documents.length : 0;
+        const count = Array.isArray(row.documents) ? row.documents.length : 0;
+        if (count === 0) {
+          return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-500 border border-slate-200">
+              <FileText className="w-3.5 h-3.5 mr-1 text-slate-400" />
+              0 Documents
+            </span>
+          );
+        }
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
             <FileCheck className="w-3.5 h-3.5 mr-1 text-emerald-600" />
-            {count > 0 ? `${count} Documents` : '2 Verified Docs'}
+            {count} {count === 1 ? 'Document' : 'Documents'}
           </span>
         );
       },
@@ -1149,7 +1106,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
 
           <div className="flex items-center space-x-2">
             <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-              Step {currentStep} of {ONBOARDING_STEPS.length}: {ONBOARDING_STEPS[currentStep - 1]?.title}
+              {ONBOARDING_STEPS[currentStep - 1]?.title}
             </span>
           </div>
         </div>
@@ -1173,65 +1130,29 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
             </div>
           </div>
 
-          {/* Stepper Navigation Pills - Realtime Validated (No False Green Ticks) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mt-6 pt-5 border-t border-slate-100">
+          {/* Section Navigation Tabs (Replaces confusing 01/05 step cards) */}
+          <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-slate-100">
             {ONBOARDING_STEPS.map((s) => {
               const isActive = currentStep === s.number;
-              const status = getStepStatus(s.number);
-              const isComplete = status.isComplete;
-              const isPast = currentStep > s.number;
-              const isIncompletePast = isPast && !isComplete;
-
               return (
                 <button
                   key={s.number}
                   type="button"
                   onClick={() => setCurrentStep(s.number)}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 ${
                     isActive
-                      ? 'bg-blue-50/90 border-[#1877f2] shadow-xs ring-1 ring-[#1877f2]/30'
-                      : isComplete
-                      ? 'bg-emerald-50/60 border-emerald-300 hover:bg-emerald-100/70'
-                      : isIncompletePast
-                      ? 'bg-amber-50/70 border-amber-300 hover:bg-amber-100/70'
-                      : 'bg-white border-slate-200/70 opacity-60 hover:opacity-100'
+                      ? 'bg-[#1877f2] text-white shadow-sm ring-2 ring-[#1877f2]/20'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-[10px] font-extrabold font-mono px-1.5 py-0.5 rounded ${
-                      isActive
-                        ? 'bg-[#1877f2] text-white'
-                        : isComplete
-                        ? 'bg-emerald-600 text-white'
-                        : isIncompletePast
-                        ? 'bg-amber-500 text-white font-bold'
-                        : 'bg-slate-200 text-slate-700'
-                    }`}>
-                      {isComplete ? '✓' : `0${s.number}`}
-                    </span>
-                    {isActive && <span className="w-2 h-2 rounded-full bg-[#1877f2] animate-pulse" />}
-                    {isComplete && !isActive && (
-                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded border border-emerald-200">
-                        Complete
-                      </span>
-                    )}
-                    {isIncompletePast && !isActive && (
-                      <span className="text-[9px] font-bold text-amber-800 bg-amber-100 px-1 py-0.2 rounded border border-amber-200">
-                        Incomplete
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[11px] font-extrabold text-slate-900 truncate">{s.title}</div>
-                  <div className={`text-[9px] truncate ${isIncompletePast ? 'text-amber-700 font-semibold' : 'text-slate-400'}`}>
-                    {isComplete ? 'All details filled' : isIncompletePast ? (status.error || 'Pending fields') : s.desc}
-                  </div>
+                  <span>{s.title}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Step-by-Step Form Body */}
+        {/* Form Body */}
         <form onSubmit={handleSubmitForm} className="space-y-6">
           {/* STEP 1: PERSONAL PROFILE */}
           {currentStep === 1 && (
@@ -1241,7 +1162,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-extrabold text-slate-900">Step 1: Personal Profile & Contact Identifiers</h2>
+                  <h2 className="text-base font-extrabold text-slate-900">Personal Profile & Contact Identifiers</h2>
                   <p className="text-xs text-slate-500">Provide legal name, contact numbers, date of birth, gender, and profile photo.</p>
                 </div>
               </div>
@@ -1360,7 +1281,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
                   <Building2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-extrabold text-slate-900">Step 2: Branch, Department, Shift & Employment Type</h2>
+                  <h2 className="text-base font-extrabold text-slate-900">Branch, Department, Shift & Employment Type</h2>
                   <p className="text-xs text-slate-500">Configure organizational placement, working hours shift, and weekly holidays.</p>
                 </div>
               </div>
@@ -1497,7 +1418,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
                   <Shield className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-extrabold text-slate-900">Step 3: Role, Permissions & Supervisory Line</h2>
+                  <h2 className="text-base font-extrabold text-slate-900">Role, Permissions & Supervisory Line</h2>
                   <p className="text-xs text-slate-500">
                     Assign system clearance. Dynamic supervisory fields (Assigned HR & Reporting Manager) adapt automatically according to the chosen role.
                   </p>
@@ -1674,7 +1595,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
                   <CreditCard className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-extrabold text-slate-900">Step 4: Configure Monthly Compensation & Allowances</h2>
+                  <h2 className="text-base font-extrabold text-slate-900">Configure Monthly Compensation & Allowances</h2>
                   <p className="text-xs text-slate-500">
                     Gross CTC, Basic, HRA, DA, PF/ESI statutory flags, and income tax regime settings.
                   </p>
@@ -1817,7 +1738,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
                   <KeyRound className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-extrabold text-slate-900">Step 5: Employee Portal Authentication & Password</h2>
+                  <h2 className="text-base font-extrabold text-slate-900">Employee Portal Authentication & Password</h2>
                   <p className="text-xs text-slate-500">
                     Password used for employee portal login, attendance selfie punches, and personal payslip access.
                   </p>
@@ -1868,7 +1789,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
                   <Landmark className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-extrabold text-slate-900">Step 6: Payout Bank Account, Statutory IDs & Address</h2>
+                  <h2 className="text-base font-extrabold text-slate-900">Payout Bank Account, Statutory IDs & Address</h2>
                   <p className="text-xs text-slate-500">
                     Direct salary deposit account, Aadhaar, PAN, residential address, and emergency contact.
                   </p>
@@ -2034,7 +1955,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
                     <FileCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-base font-extrabold text-slate-900">Step 7: KYC Documents, Resume & Offer Letter</h2>
+                    <h2 className="text-base font-extrabold text-slate-900">KYC Documents, Resume & Offer Letter</h2>
                     <p className="text-xs text-slate-500">
                       Upload multiple statutory verification documents. Click <strong>+ Add Document</strong> to add more files.
                     </p>
@@ -2144,7 +2065,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
               }`}
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
-              Previous Step
+              Previous
             </button>
 
             <div className="flex items-center space-x-2">
@@ -2162,7 +2083,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
                   onClick={handleNextStep}
                   className="inline-flex items-center px-5 py-2 rounded-xl bg-[#1877f2] hover:bg-[#166fe5] text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
                 >
-                  <span>Next Step</span>
+                  <span>Next</span>
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </button>
               ) : (
@@ -2185,40 +2106,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
   // FULL PAGE DETAILS VIEW (When User clicks "View")
   // ----------------------------------------------------
   if (viewMode === 'view' && viewEmployee) {
-    const docsList = viewEmployee.documents && viewEmployee.documents.length > 0 ? viewEmployee.documents : [
-      {
-        name: 'Aadhaar Card (National ID)',
-        document_type: 'aadhaar',
-        file_name: `Aadhaar_${viewEmployee.first_name}_${viewEmployee.last_name}.pdf`,
-        file_size: '1.8 MB',
-        upload_date: viewEmployee.date_of_joining,
-        status: 'verified' as const,
-      },
-      {
-        name: 'PAN Card (Tax Identification)',
-        document_type: 'pan',
-        file_name: `PAN_${viewEmployee.pan_number || 'CARD'}.pdf`,
-        file_size: '850 KB',
-        upload_date: viewEmployee.date_of_joining,
-        status: 'verified' as const,
-      },
-      {
-        name: 'Educational Degree Certificate',
-        document_type: 'degree',
-        file_name: `${viewEmployee.first_name}_BTech_Degree.pdf`,
-        file_size: '3.2 MB',
-        upload_date: viewEmployee.date_of_joining,
-        status: 'verified' as const,
-      },
-      {
-        name: 'Odias ERP Official Offer Letter',
-        document_type: 'offer_letter',
-        file_name: `Offer_Letter_ODIAS_${viewEmployee.employee_id}.pdf`,
-        file_size: '1.1 MB',
-        upload_date: viewEmployee.date_of_joining,
-        status: 'verified' as const,
-      },
-    ];
+    const docsList = Array.isArray(viewEmployee.documents) ? viewEmployee.documents : [];
 
     const currentRole = AVAILABLE_ROLES.find((r) => r.code === viewEmployee.role_code) || {
       name: viewEmployee.role_name || 'Associate Staff (Standard Access)',
@@ -2776,62 +2664,70 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
           </div>
 
           {/* Document Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {docsList.map((doc, idx) => (
-              <div
-                key={idx}
-                className="p-4 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 transition-all shadow-2xs flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="p-2.5 rounded-xl bg-slate-100 text-slate-700">
-                      {doc.document_type === 'aadhaar' ? (
-                        <Landmark className="w-5 h-5 text-blue-600" />
-                      ) : doc.document_type === 'pan' ? (
-                        <CreditCard className="w-5 h-5 text-purple-600" />
-                      ) : doc.document_type === 'degree' ? (
-                        <Award className="w-5 h-5 text-amber-600" />
-                      ) : doc.document_type === 'offer_letter' ? (
-                        <FileCheck className="w-5 h-5 text-emerald-600" />
-                      ) : (
-                        <FileText className="w-5 h-5 text-slate-600" />
-                      )}
+          {docsList.length === 0 ? (
+            <div className="p-8 text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl">
+              <FileCheck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <p className="text-xs font-bold text-slate-600">No Verified Documents Uploaded</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Click "Upload More Documents" to attach statutory KYC files.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {docsList.map((doc, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 transition-all shadow-2xs flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="p-2.5 rounded-xl bg-slate-100 text-slate-700">
+                        {doc.document_type === 'aadhaar' ? (
+                          <Landmark className="w-5 h-5 text-blue-600" />
+                        ) : doc.document_type === 'pan' ? (
+                          <CreditCard className="w-5 h-5 text-purple-600" />
+                        ) : doc.document_type === 'degree' ? (
+                          <Award className="w-5 h-5 text-amber-600" />
+                        ) : doc.document_type === 'offer_letter' ? (
+                          <FileCheck className="w-5 h-5 text-emerald-600" />
+                        ) : (
+                          <FileText className="w-5 h-5 text-slate-600" />
+                        )}
+                      </div>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        {doc.status?.toUpperCase() || 'VERIFIED'}
+                      </span>
                     </div>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      {doc.status?.toUpperCase() || 'VERIFIED'}
-                    </span>
+
+                    <h3 className="font-bold text-slate-900 text-sm">{doc.name}</h3>
+                    <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">{doc.file_name}</p>
+
+                    <div className="flex items-center space-x-3 text-[11px] text-slate-400 font-mono mt-3">
+                      <span>Size: {doc.file_size || '1.4 MB'}</span>
+                      <span>•</span>
+                      <span>Uploaded: {doc.upload_date || '2026-11-13'}</span>
+                    </div>
                   </div>
 
-                  <h3 className="font-bold text-slate-900 text-sm">{doc.name}</h3>
-                  <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">{doc.file_name}</p>
-
-                  <div className="flex items-center space-x-3 text-[11px] text-slate-400 font-mono mt-3">
-                    <span>Size: {doc.file_size || '1.4 MB'}</span>
-                    <span>•</span>
-                    <span>Uploaded: {doc.upload_date || '2026-11-13'}</span>
+                  <div className="flex items-center space-x-2 pt-4 mt-4 border-t border-slate-100">
+                    <button
+                      onClick={() => setPreviewDoc(doc)}
+                      className="flex-1 inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5 mr-1" />
+                      Preview
+                    </button>
+                    <button
+                      onClick={() => handleDownloadDoc(doc, viewEmployee.full_name)}
+                      className="flex-1 inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-xs transition-colors cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5 mr-1" />
+                      Download
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center space-x-2 pt-4 mt-4 border-t border-slate-100">
-                  <button
-                    onClick={() => setPreviewDoc(doc)}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs transition-colors cursor-pointer"
-                  >
-                    <Eye className="w-3.5 h-3.5 mr-1" />
-                    Preview
-                  </button>
-                  <button
-                    onClick={() => handleDownloadDoc(doc, viewEmployee.full_name)}
-                    className="flex-1 inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-xs transition-colors cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5 mr-1" />
-                    Download
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* SECTION 5: ROLE & PERMISSION CLEARANCE MATRIX (PLACED AT THE VERY BOTTOM OF VIEW DOSSIER PER USER SPECIFICATION) */}

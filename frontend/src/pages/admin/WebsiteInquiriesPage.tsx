@@ -88,6 +88,7 @@ export const WebsiteInquiriesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [mobileFilterSheetOpen, setMobileFilterSheetOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<WebsiteInquiry | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
@@ -322,14 +323,15 @@ export const WebsiteInquiriesPage: React.FC = () => {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+        {/* Desktop Filters (Inline on md: and up) */}
+        <div className="hidden md:flex flex-wrap items-center gap-2.5 w-full md:w-auto">
           {/* Industry filter */}
           <div className="flex items-center gap-1.5 text-xs text-slate-600">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
             <select
               value={selectedIndustry}
               onChange={(e) => setSelectedIndustry(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 outline-none focus:border-blue-500"
+              className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
             >
               <option value="all">All Sectors</option>
               <option value="it-software">IT & Software</option>
@@ -347,7 +349,7 @@ export const WebsiteInquiriesPage: React.FC = () => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 outline-none focus:border-blue-500"
+            className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
           >
             <option value="all">All Statuses</option>
             <option value="new">New Ingestion</option>
@@ -356,11 +358,131 @@ export const WebsiteInquiriesPage: React.FC = () => {
             <option value="converted">Converted</option>
           </select>
         </div>
+
+        {/* Mobile & Tablet Filter Button (Screens < 768px) */}
+        <div className="flex md:hidden items-center justify-between gap-2 w-full pt-1">
+          <button
+            type="button"
+            onClick={() => setMobileFilterSheetOpen(true)}
+            className="flex-1 inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+          >
+            <Filter className="w-4 h-4 text-blue-600" />
+            <span>Filter Inquiries</span>
+            {(selectedIndustry !== 'all' || selectedStatus !== 'all') && (
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-blue-600 text-white font-extrabold">Active</span>
+            )}
+          </button>
+
+          {(selectedIndustry !== 'all' || selectedStatus !== 'all' || searchQuery) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedIndustry('all');
+                setSelectedStatus('all');
+                setSearchQuery('');
+              }}
+              className="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Mobile Filter Bottom Sheet Modal */}
+      {mobileFilterSheetOpen && (
+        <div
+          onClick={() => setMobileFilterSheetOpen(false)}
+          className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto border border-slate-200 animate-in slide-in-from-bottom duration-200 text-left"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                  <Filter className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">Filter Inquiries</h3>
+                  <p className="text-[11px] text-slate-500">Select parameters to refine website inquiries</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileFilterSheetOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 py-1">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Industry / Sector</label>
+                <select
+                  value={selectedIndustry}
+                  onChange={(e) => setSelectedIndustry(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 text-slate-800"
+                >
+                  <option value="all">All Sectors</option>
+                  <option value="it-software">IT & Software</option>
+                  <option value="manufacturing">Manufacturing & Defence</option>
+                  <option value="retail">Retail & E-Commerce</option>
+                  <option value="trading">Trading & Distribution</option>
+                  <option value="consultancy">Consultancy & Legal</option>
+                  <option value="service">Field Service & Maintenance</option>
+                  <option value="startups">High-Growth Startup</option>
+                  <option value="corporate">Large Corporate</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Pipeline Status</label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 text-slate-800"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="new">New Ingestion</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="in_discussion">In Discussion</option>
+                  <option value="converted">Converted</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedIndustry('all');
+                  setSelectedStatus('all');
+                  setMobileFilterSheetOpen(false);
+                }}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileFilterSheetOpen(false)}
+                className="inline-flex items-center space-x-1.5 px-5 py-2.5 rounded-xl bg-[#1877f2] hover:bg-blue-600 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                <span>Submit & Apply Filters</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Data Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* 1. Desktop & Tablet Large Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
               <tr>
@@ -504,6 +626,90 @@ export const WebsiteInquiriesPage: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* 2. Mobile Responsive Card List (Matching user reference photo for screens < 768px) */}
+        <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3 bg-slate-50/70">
+          {filtered.length === 0 ? (
+            <div className="py-12 px-4 text-center bg-white rounded-2xl border border-slate-200">
+              <Inbox className="w-8 h-8 mx-auto text-slate-300 mb-1" />
+              <p className="text-sm font-semibold text-slate-600">No website inquiries found</p>
+            </div>
+          ) : (
+            filtered.map((item) => (
+              <div
+                key={item.id}
+                className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm space-y-3 transition-all"
+              >
+                {/* Card Top: Company + Chevron + Ref & Date */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+                      <span className="font-extrabold text-slate-900 text-sm truncate">{item.companyName}</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-medium mt-0.5 block">
+                      Contact: {item.fullName}
+                    </span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="font-mono font-bold text-blue-600 text-[11px] block">{item.id}</span>
+                    <span className="text-[10px] text-slate-400 block">{new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                  </div>
+                </div>
+
+                {/* Attributes Grid (2 Columns matching reference photo) */}
+                <div className="grid grid-cols-2 gap-2.5 pt-2.5 border-t border-slate-100 text-xs">
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Email</span>
+                    <a href={`mailto:${item.email}`} className="text-blue-600 font-semibold text-[11px] truncate block hover:underline">
+                      {item.email}
+                    </a>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Phone</span>
+                    <a href={`tel:${item.phone}`} className="text-slate-800 font-semibold text-[11px] truncate block">
+                      {item.phone}
+                    </a>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Industry / Scale</span>
+                    <span className="font-semibold text-slate-700 text-[11px] block">{item.industry || 'Enterprise'} ({item.employeeCount || '10-50'})</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Status</span>
+                    <select
+                      value={item.status}
+                      onChange={(e) => handleStatusChange(item.id, e.target.value as any)}
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-200 bg-white"
+                    >
+                      <option value="new">● New Ingestion</option>
+                      <option value="contacted">● Contacted</option>
+                      <option value="in_discussion">● In Discussion</option>
+                      <option value="converted">● Converted</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Actions Bottom Bar */}
+                <div className="pt-2.5 border-t border-slate-100 flex items-center justify-end gap-1.5">
+                  <button
+                    onClick={() => setSelectedInquiry(item)}
+                    className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 cursor-pointer"
+                  >
+                    <Eye className="w-3.5 h-3.5 mr-1" />
+                    <span>View Details</span>
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirmId(item.id)}
+                    className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

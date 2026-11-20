@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  ArrowUpDown, ArrowUp, ArrowDown, Search, X
+  ArrowUpDown, ArrowUp, ArrowDown, Search, X, Filter, Check
 } from 'lucide-react';
 
 export interface ColumnDef<T> {
@@ -12,6 +12,7 @@ export interface ColumnDef<T> {
   sortable?: boolean;
   className?: string;
   align?: 'left' | 'center' | 'right';
+  isAction?: boolean;
 }
 
 interface DataTableProps<T> {
@@ -26,6 +27,7 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
   emptyMessage?: string;
   className?: string;
+  mobileCardRender?: (row: T, idx: number) => React.ReactNode;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -40,12 +42,14 @@ export function DataTable<T extends Record<string, any>>({
   onRowClick,
   emptyMessage = 'No records found matching criteria.',
   className = '',
+  mobileCardRender,
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(initialPageSize);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   // Search Filtering
   const filteredData = useMemo(() => {
@@ -173,10 +177,27 @@ export function DataTable<T extends Record<string, any>>({
         </div>
 
         {/* Right: Search Input + Custom Filters */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {filterComponent}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Desktop Filter Component (Inline on md: and up) */}
+          {filterComponent && (
+            <div className="hidden md:flex items-center gap-2">
+              {filterComponent}
+            </div>
+          )}
 
-          <div className="relative min-w-[220px] max-w-xs flex-1">
+          {/* Mobile Filter Button (Screens < 768px) */}
+          {filterComponent && (
+            <button
+              type="button"
+              onClick={() => setMobileFilterOpen(true)}
+              className="md:hidden inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+            >
+              <Filter className="w-3.5 h-3.5 text-blue-600" />
+              <span>Filters</span>
+            </button>
+          )}
+
+          <div className="relative min-w-[170px] sm:min-w-[220px] max-w-xs flex-1">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
             <input
               type="text"
@@ -205,8 +226,70 @@ export function DataTable<T extends Record<string, any>>({
         </div>
       </div>
 
-      {/* Grid Table Body */}
-      <div className="overflow-x-auto flex-1">
+      {/* Mobile & Tablet Filter Bottom Sheet Drawer */}
+      {mobileFilterOpen && (
+        <div
+          onClick={() => setMobileFilterOpen(false)}
+          className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto border border-slate-200 animate-in slide-in-from-bottom duration-200"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                  <Filter className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">Filter Records</h3>
+                  <p className="text-[11px] text-slate-500">Configure parameters to refine table output</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileFilterOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Filter Body */}
+            <div className="space-y-3 py-1">
+              <div className="flex flex-col gap-3 [&_select]:w-full [&_select]:px-3 [&_select]:py-2.5 [&_select]:text-xs [&_select]:rounded-xl [&_select]:border [&_select]:border-slate-300 [&_select]:bg-slate-50 [&_select]:font-semibold">
+                {filterComponent}
+              </div>
+            </div>
+
+            {/* Submit / Apply Button */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setMobileFilterOpen(false);
+                }}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileFilterOpen(false)}
+                className="inline-flex items-center space-x-1.5 px-5 py-2.5 rounded-xl bg-[#1877f2] hover:bg-blue-600 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                <span>Submit & Show Results</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Desktop & Tablet Large Table View (Hidden on Mobile < 768px - Preserves Desktop 100%) */}
+      <div className="hidden md:block overflow-x-auto flex-1">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
@@ -286,6 +369,119 @@ export function DataTable<T extends Record<string, any>>({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* 2. Mobile Responsive Card List (Active on Screens < 768px matching user reference photo) */}
+      <div className="md:hidden flex-1 p-3 space-y-3 bg-slate-50/70">
+        {paginatedData.length === 0 ? (
+          <div className="py-12 px-4 text-center bg-white rounded-2xl border border-slate-200 shadow-2xs">
+            <p className="text-sm font-semibold text-slate-500">{emptyMessage}</p>
+          </div>
+        ) : (
+          paginatedData.map((row, idx) => {
+            if (mobileCardRender) {
+              return (
+                <div key={row.id || idx}>
+                  {mobileCardRender(row, idx)}
+                </div>
+              );
+            }
+
+            // Identify primary column, action column, and intermediate attributes
+            const nonActionCols = columns.filter(c =>
+              !c.isAction &&
+              !c.key.toLowerCase().includes('action') &&
+              !c.header.toLowerCase().includes('action')
+            );
+            const actionCol = columns.find(c =>
+              c.isAction ||
+              c.key.toLowerCase().includes('action') ||
+              c.header.toLowerCase().includes('action')
+            ) || (columns.length > 2 && (columns[columns.length - 1].header === '' || columns[columns.length - 1].key === 'actions') ? columns[columns.length - 1] : null);
+
+            const primaryCol = nonActionCols[0] || columns[0];
+            const secondaryCol = nonActionCols[1];
+            const attributeCols = nonActionCols.slice(secondaryCol ? 2 : 1);
+
+            const primaryContent = primaryCol.render
+              ? primaryCol.render(row)
+              : primaryCol.accessor
+              ? primaryCol.accessor(row)
+              : row[primaryCol.key];
+
+            const secondaryContent = secondaryCol
+              ? secondaryCol.render
+                ? secondaryCol.render(row)
+                : secondaryCol.accessor
+                ? secondaryCol.accessor(row)
+                : row[secondaryCol.key]
+              : null;
+
+            return (
+              <div
+                key={row.id || idx}
+                onClick={() => onRowClick && onRowClick(row)}
+                className={`bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm space-y-3 transition-all hover:shadow-md hover:border-slate-300 ${
+                  onRowClick ? 'cursor-pointer active:scale-[0.99]' : ''
+                }`}
+              >
+                {/* Card Top: Primary Title + Chevron + Subtitle */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-extrabold text-slate-900 tracking-tight leading-snug">
+                      {primaryContent}
+                    </div>
+                    {secondaryContent && (
+                      <div className="text-[11px] text-slate-500 font-medium mt-1 truncate">
+                        {secondaryContent}
+                      </div>
+                    )}
+                  </div>
+                  {onRowClick && (
+                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                  )}
+                </div>
+
+                {/* Card Attributes Grid (2-3 Columns, matching user photo) */}
+                {attributeCols.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-2.5 border-t border-slate-100 text-xs">
+                    {attributeCols.map((col) => {
+                      const val = col.render
+                        ? col.render(row)
+                        : col.accessor
+                        ? col.accessor(row)
+                        : row[col.key];
+
+                      if (val === null || val === undefined || val === '') return null;
+
+                      return (
+                        <div key={col.key} className="space-y-0.5 min-w-0">
+                          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate">
+                            {col.header}
+                          </span>
+                          <div className="font-semibold text-slate-800 text-[11px] truncate">
+                            {val}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Card Bottom: Action Buttons Row (Matching pastel pills in reference photo) */}
+                {actionCol && (
+                  <div className="pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-1.5 justify-end">
+                    {actionCol.render
+                      ? actionCol.render(row)
+                      : actionCol.accessor
+                      ? actionCol.accessor(row)
+                      : row[actionCol.key]}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* Bottom Footer: "Showing 1 to 10 of 101 Entries" & Pagination */}

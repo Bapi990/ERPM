@@ -674,6 +674,35 @@ export interface Department {
   id: string;
   name: string;
   code?: string;
+  branch?: string;
+  branch_name?: string;
+  description?: string;
+  is_active?: boolean;
+  employee_count?: number;
+}
+
+export interface Designation {
+  id: string;
+  title: string;
+  grade?: string;
+  department?: string;
+  department_name?: string;
+  description?: string;
+  is_active?: boolean;
+  employee_count?: number;
+}
+
+export interface OrgBranch {
+  id: string;
+  name: string;
+  code: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  address?: string;
+  is_head_office?: boolean;
+  is_active?: boolean;
+  employee_count?: number;
 }
 
 export interface CompanyProfile {

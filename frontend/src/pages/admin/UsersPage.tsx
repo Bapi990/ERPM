@@ -33,6 +33,7 @@ export const UsersPage: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [mobileFilterSheetOpen, setMobileFilterSheetOpen] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
@@ -353,8 +354,8 @@ export const UsersPage: React.FC = () => {
           />
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Desktop Filters (Inline on screens md: and up) */}
+        <div className="hidden md:flex flex-wrap items-center gap-2.5">
           {/* Role Filter */}
           <div className="flex items-center space-x-1.5">
             <span className="text-xs font-bold text-slate-500">Role:</span>
@@ -413,11 +414,140 @@ export const UsersPage: React.FC = () => {
             </button>
           )}
         </div>
+
+        {/* Mobile & Tablet Filter Button (Screens < 768px) */}
+        <div className="flex md:hidden items-center justify-between gap-2 w-full pt-1">
+          <button
+            type="button"
+            onClick={() => setMobileFilterSheetOpen(true)}
+            className="flex-1 inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
+          >
+            <Filter className="w-4 h-4 text-blue-600" />
+            <span>Filter Users</span>
+            {(roleFilter !== 'all' || departmentFilter !== 'all' || statusFilter !== 'all') && (
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-blue-600 text-white font-extrabold">Active</span>
+            )}
+          </button>
+
+          {(roleFilter !== 'all' || departmentFilter !== 'all' || statusFilter !== 'all' || searchQuery) && (
+            <button
+              type="button"
+              onClick={() => {
+                setRoleFilter('all');
+                setDepartmentFilter('all');
+                setStatusFilter('all');
+                setSearchQuery('');
+              }}
+              className="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl cursor-pointer"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Mobile Filter Bottom Sheet Modal */}
+      {mobileFilterSheetOpen && (
+        <div
+          onClick={() => setMobileFilterSheetOpen(false)}
+          className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto border border-slate-200 animate-in slide-in-from-bottom duration-200 text-left"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                  <Filter className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">Filter System Users</h3>
+                  <p className="text-[11px] text-slate-500">Select parameters to refine user directory</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileFilterSheetOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 py-1">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Organizational Role</label>
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 text-slate-800"
+                >
+                  <option value="all">All Roles</option>
+                  {ROLE_CATEGORIES.filter(r => r.code !== 'all').map(r => (
+                    <option key={r.code} value={r.code}>{r.label.split(' (')[0]}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Assigned Department</label>
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 text-slate-800"
+                >
+                  <option value="all">All Departments</option>
+                  {departments.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">Account Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50 text-slate-800"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setRoleFilter('all');
+                  setDepartmentFilter('all');
+                  setStatusFilter('all');
+                  setMobileFilterSheetOpen(false);
+                }}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+              >
+                Reset Filters
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileFilterSheetOpen(false)}
+                className="inline-flex items-center space-x-1.5 px-5 py-2.5 rounded-xl bg-[#1877f2] hover:bg-blue-600 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                <span>Submit & Apply Filters</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Users Data Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* 1. Desktop & Tablet Large Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-black uppercase text-slate-500 tracking-wider">
@@ -565,6 +695,130 @@ export const UsersPage: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* 2. Mobile Responsive Cards View (Matching user photo reference for screens < 768px) */}
+        <div className="md:hidden divide-y divide-slate-100 p-3 space-y-3 bg-slate-50/70">
+          {filteredUsers.length === 0 ? (
+            <div className="py-12 px-4 text-center bg-white rounded-2xl border border-slate-200">
+              <p className="text-sm font-semibold text-slate-500">No system users match the selected filters.</p>
+            </div>
+          ) : (
+            filteredUsers.map((u) => {
+              const hasCustomOverride = userOverrides[u.id]?.enabled;
+              return (
+                <div
+                  key={u.id}
+                  className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm space-y-3 transition-all"
+                >
+                  {/* Top: Avatar, Name, Email & Role */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                        {u.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="font-extrabold text-slate-900 text-sm block truncate">{u.name}</span>
+                        <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 truncate">
+                          <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span className="truncate">{u.email}</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      {getRoleBadge(u.role_code, u.role_name)}
+                    </div>
+                  </div>
+
+                  {/* Attributes Grid (2-3 Columns matching photo) */}
+                  <div className="grid grid-cols-2 gap-2.5 pt-2.5 border-t border-slate-100 text-xs">
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">User ID</span>
+                      <div className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-mono text-[11px] font-bold mt-0.5">
+                        <span>{u.id}</span>
+                        <button
+                          onClick={() => handleCopyId(u.id)}
+                          className="text-slate-500 hover:text-slate-800"
+                          title="Copy ID"
+                        >
+                          {copiedId === u.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Department</span>
+                      <span className="font-bold text-slate-800 text-xs block mt-0.5">{u.department || 'General'}</span>
+                    </div>
+
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Custom Perms</span>
+                      <div className="mt-0.5">
+                        {hasCustomOverride ? (
+                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <Sparkles className="w-3 h-3 text-emerald-600" />
+                            <span>Active</span>
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 font-medium">Role Default</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Account Status</span>
+                      <div className="mt-0.5">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          u.status === 'active' || !u.status
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                            u.status === 'active' || !u.status ? 'bg-emerald-500' : 'bg-rose-500'
+                          }`} />
+                          {u.status === 'active' || !u.status ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Row (Matching pastel pills in reference photo) */}
+                  <div className="pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-1.5 justify-end">
+                    <button
+                      onClick={() => handleConfigurePermissions(u)}
+                      className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] border border-blue-200 transition-colors cursor-pointer"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Permissions</span>
+                    </button>
+                    <button
+                      onClick={() => handleTestRole(u.role_code)}
+                      className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition-colors cursor-pointer"
+                    >
+                      <ArrowRightLeft className="w-3.5 h-3.5" />
+                      <span>Test Role</span>
+                    </button>
+                    <button
+                      onClick={() => handleOpenEdit(u)}
+                      className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-[11px] border border-amber-200 transition-colors cursor-pointer"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+                    {u.role_code !== 'super_admin' && (
+                      <button
+                        onClick={() => handleDelete(u.id, u.name)}
+                        className="inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] border border-rose-200 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 

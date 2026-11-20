@@ -24,16 +24,28 @@ class OrganizationDetailView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class BranchViewSet(viewsets.ModelViewSet):
-    queryset = Branch.objects.all()
+    queryset = Branch.objects.all().order_by('name')
     serializer_class = BranchSerializer
     permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        org = serializer.validated_data.get('organization') or Organization.objects.first()
+        if not org:
+            org = Organization.objects.create(name='Odias ERP Global Enterprise')
+        serializer.save(organization=org)
+
 class DepartmentViewSet(viewsets.ModelViewSet):
-    queryset = Department.objects.all()
+    queryset = Department.objects.all().order_by('name')
     serializer_class = DepartmentSerializer
     permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        org = serializer.validated_data.get('organization') or Organization.objects.first()
+        if not org:
+            org = Organization.objects.create(name='Odias ERP Global Enterprise')
+        serializer.save(organization=org)
+
 class DesignationViewSet(viewsets.ModelViewSet):
-    queryset = Designation.objects.all()
+    queryset = Designation.objects.all().order_by('title')
     serializer_class = DesignationSerializer
     permission_classes = [IsAuthenticated]

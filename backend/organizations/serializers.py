@@ -3,12 +3,17 @@ from .models import Organization, Branch, Department, Designation
 
 class DesignationSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='department.name', read_only=True)
+    employee_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Designation
-        fields = ['id', 'title', 'grade', 'department', 'department_name', 'description', 'is_active']
+        fields = ['id', 'title', 'grade', 'department', 'department_name', 'description', 'is_active', 'employee_count']
+
+    def get_employee_count(self, obj):
+        return obj.employees.count()
 
 class DepartmentSerializer(serializers.ModelSerializer):
+    organization = serializers.PrimaryKeyRelatedField(queryset=Organization.objects.all(), required=False)
     branch_name = serializers.CharField(source='branch.name', read_only=True)
     employee_count = serializers.SerializerMethodField()
 
@@ -20,11 +25,12 @@ class DepartmentSerializer(serializers.ModelSerializer):
         return obj.employees.count()
 
 class BranchSerializer(serializers.ModelSerializer):
+    organization = serializers.PrimaryKeyRelatedField(queryset=Organization.objects.all(), required=False)
     employee_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Branch
-        fields = ['id', 'name', 'code', 'city', 'state', 'country', 'address', 'is_head_office', 'is_active', 'employee_count']
+        fields = ['id', 'name', 'code', 'organization', 'city', 'state', 'country', 'address', 'is_head_office', 'is_active', 'employee_count']
 
     def get_employee_count(self, obj):
         return obj.employees.count()

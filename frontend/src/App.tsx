@@ -8,6 +8,8 @@ import { Login } from './pages/Login';
 import { Home as WebsiteHome } from './website/pages/Home';
 import { Dashboard } from './pages/Dashboard';
 import { EmployeesPage } from './pages/hrms/EmployeesPage';
+import { DepartmentsPage } from './pages/hrms/DepartmentsPage';
+import { DesignationsPage } from './pages/hrms/DesignationsPage';
 import { AttendancePage } from './pages/hrms/AttendancePage';
 import { LeavesPage } from './pages/hrms/LeavesPage';
 import { HolidaysPage } from './pages/hrms/HolidaysPage';
@@ -36,6 +38,8 @@ import { SalesTargetsPage } from './pages/crm/SalesTargetsPage';
 import { SalesTeamPerformancePage } from './pages/crm/SalesTeamPerformancePage';
 import { CustomerComplaintsPage } from './pages/crm/CustomerComplaintsPage';
 import { CustomerFeedbackPage } from './pages/crm/CustomerFeedbackPage';
+import { CustomWebhooksPage } from './pages/crm/CustomWebhooksPage';
+import { CRMDocumentationPage } from './pages/crm/CRMDocumentationPage';
 import { InvoicesPage } from './pages/billing/InvoicesPage';
 import { QuotationsPage } from './pages/billing/QuotationsPage';
 import { SalesOrdersPage } from './pages/billing/SalesOrdersPage';
@@ -186,7 +190,8 @@ export const App: React.FC = () => {
               <Route path="hrms/managers" element={<EmployeesPage mode="manager" />} />
               <Route path="hrms/employees" element={<EmployeesPage mode="employee" />} />
               <Route path="hrms/lifecycle" element={<Navigate to="/app/hrms/hierarchy" replace />} />
-              <Route path="hrms/departments" element={<EmployeesPage />} />
+              <Route path="hrms/departments" element={<DepartmentsPage />} />
+              <Route path="hrms/designations" element={<DesignationsPage />} />
               <Route path="hrms/hierarchy" element={<HierarchyPage />} />
               <Route path="hrms/attendance" element={<AttendancePage />} />
               <Route path="hrms/attendance-corrections" element={<Navigate to="/app/hrms/attendance" replace />} />
@@ -235,6 +240,9 @@ export const App: React.FC = () => {
               <Route path="crm/performance" element={<SalesTeamPerformancePage />} />
               <Route path="crm/complaints" element={<CustomerComplaintsPage />} />
               <Route path="crm/feedback" element={<CustomerFeedbackPage />} />
+              <Route path="crm/webhooks" element={<CustomWebhooksPage />} />
+              <Route path="crm/docs" element={<CRMDocumentationPage />} />
+              <Route path="crm/documentation" element={<CRMDocumentationPage />} />
 
               {/* Billing & GST Accounting */}
               <Route path="billing" element={<BillingDashboardPage />} />
@@ -347,7 +355,7 @@ export const App: React.FC = () => {
               <Route path="admin/roles" element={<RolesPage />} />
               <Route path="admin/department-perms" element={<RolesPage />} />
               <Route path="admin/approval-workflows" element={<ActivityPage />} />
-              <Route path="admin/branches" element={<EmployeesPage />} />
+              <Route path="admin/branches" element={<DepartmentsPage />} />
               <Route path="admin/config" element={<RolesPage />} />
               <Route path="admin/notifications" element={<ActivityPage />} />
               <Route path="admin/email-sms" element={<RolesPage />} />

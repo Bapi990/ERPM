@@ -511,39 +511,6 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12 font-sans">
-      {/* 1. TOP REALTIME STATUS STREAM BANNER (Extra Realtime Feature) */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-3 sm:p-4 shadow-lg flex flex-col md:flex-row items-center justify-between gap-3 border border-indigo-900/60">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-400 text-xs font-mono font-bold">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>REALTIME SYSTEM CONNECTED</span>
-          </div>
-
-          <div className="flex items-center gap-3 text-xs text-slate-300 font-medium">
-            <span className="flex items-center gap-1 font-mono">
-              <Zap className="w-3.5 h-3.5 text-amber-400" />
-              <span>Latency: <strong>{latencyMs}ms</strong></span>
-            </span>
-            <span className="hidden sm:inline text-slate-500">•</span>
-            <span className="hidden sm:inline text-slate-400 font-mono text-[11px]">
-              Active Channels: <strong>HRMS • CRM • Projects • GST Invoices</strong>
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => fetchAllERPData(true)}
-            disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all cursor-pointer border border-white/10 active:scale-95 disabled:opacity-50"
-            title="Force Realtime Sync"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-amber-400' : 'text-slate-300'}`} />
-            <span>{isRefreshing ? 'Syncing...' : 'Sync Now'}</span>
-          </button>
-        </div>
-      </div>
-
       {/* Success Notification Alert */}
       {successToast && (
         <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between shadow-xs animate-in slide-in-from-top-2">

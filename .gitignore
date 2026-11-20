@@ -1,0 +1,25 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+*.sqlite3.bak
+sqlite_backup.json
+backend/db.sqlite3
+backend/db.sqlite3.bak
+backend/media/
+backend/staticfiles/
+.env
+*.log
+
+# Node / Vite / Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

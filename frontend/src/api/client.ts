@@ -61,7 +61,17 @@ export const api = {
   // Org
   getOrganization: () => apiRequest('/organization/'),
   getOrgBranches: () => apiRequest('/branches/'),
+  createOrgBranch: (data: any) => apiRequest('/branches/', { method: 'POST', body: JSON.stringify(data) }),
+  updateOrgBranch: (id: string, data: any) => apiRequest(`/branches/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteOrgBranch: (id: string) => apiRequest(`/branches/${id}/`, { method: 'DELETE' }),
   getDepartments: () => apiRequest('/departments/'),
+  createDepartment: (data: any) => apiRequest('/departments/', { method: 'POST', body: JSON.stringify(data) }),
+  updateDepartment: (id: string, data: any) => apiRequest(`/departments/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteDepartment: (id: string) => apiRequest(`/departments/${id}/`, { method: 'DELETE' }),
+  getDesignations: () => apiRequest('/designations/'),
+  createDesignation: (data: any) => apiRequest('/designations/', { method: 'POST', body: JSON.stringify(data) }),
+  updateDesignation: (id: string, data: any) => apiRequest(`/designations/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteDesignation: (id: string) => apiRequest(`/designations/${id}/`, { method: 'DELETE' }),
 
   // HRMS
   getEmployees: (params: string = '') => apiRequest(`/hrms/employees/?${params}`),
@@ -218,6 +228,15 @@ export const api = {
   createFeedback: (data: any) => apiRequest('/crm/feedback/', { method: 'POST', body: JSON.stringify(data) }),
 
   getCRMDashboard: () => apiRequest('/crm/dashboard/'),
+
+  // Custom Webhooks & Real-time Outbound Dispatcher
+  getCustomWebhooks: (params?: string) => apiRequest(`/crm/custom-webhooks/${params ? `?${params}` : ''}`),
+  createCustomWebhook: (data: any) => apiRequest('/crm/custom-webhooks/', { method: 'POST', body: JSON.stringify(data) }),
+  updateCustomWebhook: (id: string, data: any) => apiRequest(`/crm/custom-webhooks/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteCustomWebhook: (id: string) => apiRequest(`/crm/custom-webhooks/${id}/`, { method: 'DELETE' }),
+  toggleCustomWebhook: (id: string) => apiRequest(`/crm/custom-webhooks/${id}/toggle_active/`, { method: 'POST' }),
+  getWebhookDeliveryLogs: (params?: string) => apiRequest(`/crm/webhook-logs/${params ? `?${params}` : ''}`),
+  dispatchTestWebhook: (data: any) => apiRequest('/crm/webhooks/test-dispatch/', { method: 'POST', body: JSON.stringify(data) }),
 
   // Billing & Advanced GST
   getCompanyProfile: () => apiRequest('/billing/company-profile/'),

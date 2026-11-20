@@ -32,7 +32,8 @@ from crm.views import (
     OpportunityViewSet, OpportunityRemarkViewSet, CRMActivityViewSet,
     LeadChannelConfigViewSet, LeadIngestionLogViewSet, InboundLeadWebhookView,
     ClientCommunicationViewSet, SalesTargetViewSet, SalesPerformanceView,
-    CustomerComplaintViewSet, CustomerFeedbackViewSet, CRMDashboardStatsView
+    CustomerComplaintViewSet, CustomerFeedbackViewSet, CRMDashboardStatsView,
+    CustomWebhookViewSet, WebhookDeliveryLogViewSet, TestWebhookDispatchView
 )
 from billing.views import (
     ProductServiceViewSet, QuotationViewSet, InvoiceViewSet,
@@ -90,6 +91,8 @@ router.register(r'crm/communications', ClientCommunicationViewSet, basename='crm
 router.register(r'crm/targets', SalesTargetViewSet, basename='crm-targets')
 router.register(r'crm/complaints', CustomerComplaintViewSet, basename='crm-complaints')
 router.register(r'crm/feedback', CustomerFeedbackViewSet, basename='crm-feedback')
+router.register(r'crm/custom-webhooks', CustomWebhookViewSet, basename='crm-custom-webhooks')
+router.register(r'crm/webhook-logs', WebhookDeliveryLogViewSet, basename='crm-webhook-logs')
 router.register(r'billing/products', ProductServiceViewSet, basename='billing-products')
 router.register(r'billing/quotations', QuotationViewSet, basename='billing-quotations')
 router.register(r'billing/invoices', InvoiceViewSet, basename='billing-invoices')
@@ -148,6 +151,10 @@ urlpatterns = [
     path('api/v1/crm/dashboard/', CRMDashboardStatsView.as_view(), name='crm-dashboard-stats'),
     path('api/v1/crm/performance/', SalesPerformanceView.as_view(), name='crm-performance'),
     path('api/v1/crm/lead-channels/webhook/', InboundLeadWebhookView.as_view(), name='crm-inbound-webhook'),
+    path('api/v1/crm/webhook/', InboundLeadWebhookView.as_view(), name='crm-webhook'),
+    path('api/v1/crm/webhook/inbound/', InboundLeadWebhookView.as_view(), name='crm-webhook-inbound'),
+    path('api/v1/crm/webhooks/test-dispatch/', TestWebhookDispatchView.as_view(), name='crm-test-webhook-dispatch'),
+    path('api/v1/crm/custom-webhooks/test/', TestWebhookDispatchView.as_view(), name='crm-custom-webhook-test'),
 
     # Billing Dashboard & Advanced GST Views
     path('api/v1/billing/dashboard/', BillingDashboardStatsView.as_view(), name='billing-dashboard-stats'),

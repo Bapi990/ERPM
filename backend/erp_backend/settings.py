@@ -67,20 +67,52 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'erp_backend.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DB_NAME', 'u529002218_erpodias90890'),
-        'USER': os.environ.get('DB_USER', 'u529002218_erpodias90890'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'Erp@Odias909'),
-        'HOST': os.environ.get('DB_HOST', 'srv685.hstgr.io'),
-        'PORT': os.environ.get('DB_PORT', '3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
+def check_mysql_health():
+    if os.environ.get('FORCE_SQLITE'):
+        return False
+    try:
+        import pymysql
+        conn = pymysql.connect(
+            host=os.environ.get('DB_HOST', 'srv685.hstgr.io'),
+            user=os.environ.get('DB_USER', 'u529002218_erpodias90890'),
+            password=os.environ.get('DB_PASSWORD', 'Erp@Odias909'),
+            database=os.environ.get('DB_NAME', 'u529002218_erpodias90890'),
+            port=int(os.environ.get('DB_PORT', '3306')),
+            connect_timeout=2
+        )
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1;")
+        conn.close()
+        return True
+    except Exception as e:
+        print(f">>> [MYSQL HEALTH CHECK FAILED] {e}")
+        return False
+
+if check_mysql_health():
+    print(">>> [DATABASE ENGINE] Connected to Hostinger MySQL (srv685.hstgr.io)")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ.get('DB_NAME', 'u529002218_erpodias90890'),
+            'USER': os.environ.get('DB_USER', 'u529002218_erpodias90890'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'Erp@Odias909'),
+            'HOST': os.environ.get('DB_HOST', 'srv685.hstgr.io'),
+            'PORT': os.environ.get('DB_PORT', '3306'),
+            'CONN_MAX_AGE': 60,
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
     }
-}
+else:
+    print(">>> [DATABASE ENGINE] Failover to Local SQLite (db.sqlite3)")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 AUTH_USER_MODEL = 'accounts.User'
 

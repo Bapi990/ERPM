@@ -3,7 +3,8 @@ from .models import (
     Lead, LeadStatusRemark, Customer, ContactPerson,
     Opportunity, OpportunityRemark, CRMActivity,
     LeadChannelConfig, LeadIngestionLog, ClientCommunication,
-    SalesTarget, CustomerComplaint, CustomerFeedback
+    SalesTarget, CustomerComplaint, CustomerFeedback,
+    CustomWebhook, WebhookDeliveryLog
 )
 from accounts.models import User
 
@@ -172,3 +173,35 @@ class CustomerFeedbackSerializer(serializers.ModelSerializer):
             'category', 'sentiment', 'comments', 'follow_up_required',
             'follow_up_completed', 'created_at'
         ]
+
+class WebhookDeliveryLogSerializer(serializers.ModelSerializer):
+    webhook_name = serializers.CharField(source='webhook.name', read_only=True)
+
+    class Meta:
+        model = WebhookDeliveryLog
+        fields = [
+            'id', 'webhook', 'webhook_name', 'event', 'target_url',
+            'http_method', 'request_headers', 'request_payload',
+            'response_status', 'response_body', 'response_headers',
+            'latency_ms', 'status', 'error_message', 'created_at'
+        ]
+
+class CustomWebhookSerializer(serializers.ModelSerializer):
+    success_rate = serializers.SerializerMethodField()
+    recent_logs = WebhookDeliveryLogSerializer(source='delivery_logs', many=True, read_only=True)
+
+    class Meta:
+        model = CustomWebhook
+        fields = [
+            'id', 'name', 'url', 'method', 'trigger_event', 'entity_type',
+            'headers', 'parameters', 'body_template', 'description',
+            'is_active', 'secret_token', 'dispatches_count', 'success_count',
+            'success_rate', 'last_triggered_at', 'recent_logs',
+            'created_at', 'updated_at'
+        ]
+
+    def get_success_rate(self, obj):
+        if obj.dispatches_count > 0:
+            return round(float((obj.success_count / obj.dispatches_count) * 100), 1)
+        return 100.0
+

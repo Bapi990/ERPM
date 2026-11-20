@@ -394,3 +394,80 @@ class CustomerFeedback(models.Model):
 
     def __str__(self):
         return f"{self.customer.company_name}: {self.rating}★ (NPS: {self.nps_score})"
+
+# --- Outbound Custom Webhooks & Real-time Integrations ---
+
+class CustomWebhook(models.Model):
+    TRIGGER_EVENT_CHOICES = [
+        ('lead.created', 'On Created (New Lead Capture)'),
+        ('lead.status_changed', 'On Status Change (Stage Updated)'),
+        ('lead.assigned', 'On Lead Assigned'),
+        ('deal.won', 'On Deal Won / Converted'),
+        ('customer.created', 'On Customer Account Created'),
+        ('complaint.created', 'On Grievance / Complaint Raised'),
+    ]
+    METHOD_CHOICES = [
+        ('POST', 'POST'),
+        ('GET', 'GET'),
+        ('PUT', 'PUT'),
+    ]
+    ENTITY_CHOICES = [
+        ('lead', 'Leads'),
+        ('deal', 'Deals / Pipeline'),
+        ('customer', 'Customers'),
+        ('contact', 'Contact Persons'),
+        ('complaint', 'Customer Complaints'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=150)
+    url = models.CharField(max_length=500)
+    method = models.CharField(max_length=10, choices=METHOD_CHOICES, default='POST')
+    trigger_event = models.CharField(max_length=50, choices=TRIGGER_EVENT_CHOICES, default='lead.created')
+    entity_type = models.CharField(max_length=50, choices=ENTITY_CHOICES, default='lead')
+    headers = models.JSONField(default=dict, blank=True)
+    parameters = models.JSONField(default=dict, blank=True)
+    body_template = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, default='')
+    is_active = models.BooleanField(default=True)
+    secret_token = models.CharField(max_length=255, blank=True, default='')
+    dispatches_count = models.PositiveIntegerField(default=0)
+    success_count = models.PositiveIntegerField(default=0)
+    last_triggered_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.method}] {self.name} ({self.trigger_event}) -> {self.url}"
+
+
+class WebhookDeliveryLog(models.Model):
+    STATUS_CHOICES = [
+        ('success', 'Success (2xx)'),
+        ('failed', 'Failed (4xx/5xx/Network)'),
+        ('pending', 'Pending / In-Flight'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    webhook = models.ForeignKey(CustomWebhook, on_delete=models.CASCADE, related_name='delivery_logs', null=True, blank=True)
+    event = models.CharField(max_length=50, default='lead.created')
+    target_url = models.CharField(max_length=500)
+    http_method = models.CharField(max_length=10, default='POST')
+    request_headers = models.JSONField(default=dict, blank=True)
+    request_payload = models.JSONField(default=dict, blank=True)
+    response_status = models.IntegerField(null=True, blank=True)
+    response_body = models.TextField(blank=True, default='')
+    response_headers = models.JSONField(default=dict, blank=True)
+    latency_ms = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='success')
+    error_message = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.status.upper()}] {self.event} -> {self.target_url} ({self.response_status or 'N/A'})"
+
