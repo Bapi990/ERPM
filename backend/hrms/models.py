@@ -94,6 +94,9 @@ class Employee(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['-created_at']
+
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}".strip()
