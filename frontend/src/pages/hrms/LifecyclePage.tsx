@@ -381,77 +381,77 @@ export const LifecyclePage: React.FC = () => {
         </div>
       )}
 
-      {/* 3. Four Core Realtime Lifecycle Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 3. Four Core Realtime Lifecycle Metrics (Responsive 2 per row on mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Metric 1: Company Strength */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Company Workforce</span>
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
-              <Building2 className="w-4 h-4" />
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">Workforce</span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 shrink-0">
+              <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3">
-            <span className="text-2xl font-black text-slate-900 font-mono">148</span>
-            <span className="text-xs text-slate-500 font-medium ml-2">Total Enterprise Staff</span>
+          <div className="mt-2 sm:mt-3">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 font-mono">148</span>
+            <span className="text-[10px] sm:text-xs text-slate-500 font-medium ml-1 sm:ml-2 truncate">Staff</span>
           </div>
-          <div className="mt-2 text-[11px] text-emerald-600 font-semibold flex items-center space-x-1">
-            <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>+14.2% YoY Organic Growth</span>
+          <div className="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] text-emerald-600 font-semibold flex items-center space-x-1 truncate">
+            <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+            <span className="truncate">+14.2% Growth</span>
           </div>
         </div>
 
         {/* Metric 2: HR Induction Pipeline */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">HR Induction Queue</span>
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
-              <UserPlus className="w-4 h-4" />
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">Onboarding</span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+              <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3">
-            <span className="text-2xl font-black text-slate-900 font-mono">14</span>
-            <span className="text-xs text-slate-500 font-medium ml-2">In Onboarding (Day 1-30)</span>
+          <div className="mt-2 sm:mt-3">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 font-mono">14</span>
+            <span className="text-[10px] sm:text-xs text-slate-500 font-medium ml-1 sm:ml-2 truncate">Active</span>
           </div>
-          <div className="mt-2 text-[11px] text-blue-600 font-semibold flex items-center space-x-1">
-            <Clock className="w-3.5 h-3.5" />
-            <span>Avg 12 days ramp-up time</span>
+          <div className="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] text-blue-600 font-semibold flex items-center space-x-1 truncate">
+            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+            <span className="truncate">Avg 12 days</span>
           </div>
         </div>
 
         {/* Metric 3: Active Probation Reviews */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Probation Approvals</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
-              <ShieldCheck className="w-4 h-4" />
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">Probation</span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100 shrink-0">
+              <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3">
-            <span className="text-2xl font-black text-slate-900 font-mono">9</span>
-            <span className="text-xs text-slate-500 font-medium ml-2">Appraisals Under Review</span>
+          <div className="mt-2 sm:mt-3">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 font-mono">9</span>
+            <span className="text-[10px] sm:text-xs text-slate-500 font-medium ml-1 sm:ml-2 truncate">In Review</span>
           </div>
-          <div className="mt-2 text-[11px] text-amber-600 font-semibold flex items-center space-x-1">
-            <Check className="w-3.5 h-3.5" />
-            <span>92% Confirmation Success Rate</span>
+          <div className="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] text-amber-600 font-semibold flex items-center space-x-1 truncate">
+            <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+            <span className="truncate">92% Confirmed</span>
           </div>
         </div>
 
         {/* Metric 4: Retention & Succession */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Retention & Mobility</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-              <Award className="w-4 h-4" />
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">Retention</span>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shrink-0">
+              <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3">
-            <span className="text-2xl font-black text-slate-900 font-mono">96.8%</span>
-            <span className="text-xs text-slate-500 font-medium ml-2">Talent Retention</span>
+          <div className="mt-2 sm:mt-3">
+            <span className="text-xl sm:text-2xl font-black text-slate-900 font-mono">96.8%</span>
+            <span className="text-[10px] sm:text-xs text-slate-500 font-medium ml-1 sm:ml-2 truncate">Rate</span>
           </div>
-          <div className="mt-2 text-[11px] text-emerald-600 font-semibold flex items-center space-x-1">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Low Attrition • Top Tier Industry</span>
+          <div className="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] text-emerald-600 font-semibold flex items-center space-x-1 truncate">
+            <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+            <span className="truncate">Low Attrition</span>
           </div>
         </div>
       </div>

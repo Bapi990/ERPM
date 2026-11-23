@@ -43,11 +43,11 @@ export const OvertimePage: React.FC = () => {
     setLoading(true);
     try {
       const [otRes, empRes] = await Promise.all([
-        api.getOvertimeRecords(),
-        api.getEmployees(),
+        api.getOvertimeRecords().catch(() => ({ results: [] })),
+        api.getEmployees().catch(() => ({ results: [] })),
       ]);
-      setRecords(otRes?.data?.results || otRes?.data || []);
-      setEmployees(empRes?.data?.results || empRes?.data || []);
+      setRecords(otRes?.results || (Array.isArray(otRes) ? otRes : otRes?.data?.results || otRes?.data || []));
+      setEmployees(empRes?.results || (Array.isArray(empRes) ? empRes : empRes?.data?.results || empRes?.data || []));
     } catch (err) {
       console.error('Failed to load overtime records', err);
     } finally {
@@ -57,10 +57,12 @@ export const OvertimePage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const unsub = subscribe('overtime_*', () => {
-      loadData();
-    });
-    return () => unsub();
+    const unsub1 = subscribe('overtime_*', () => loadData());
+    const unsub2 = subscribe('employee_*', () => loadData());
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   const handleCreateOt = async (e: React.FormEvent) => {
@@ -159,54 +161,54 @@ export const OvertimePage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Extra Hours</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{totalHours} hrs</p>
-            <p className="text-xs text-primary-600 mt-1">Logged across all units</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Extra Hours</p>
+            <p className="text-base sm:text-2xl font-bold text-gray-900 mt-1 truncate">{totalHours} hrs</p>
+            <p className="text-[11px] sm:text-xs text-primary-600 mt-0.5 sm:mt-1 truncate">Logged across all units</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <Clock size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <Clock className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Approved OT Payout</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">₹{totalPayout.toLocaleString('en-IN')}</p>
-            <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-              <CheckCircle2 size={12} /> Scheduled in payroll
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Approved OT Payout</p>
+            <p className="text-base sm:text-2xl font-bold text-emerald-600 mt-1 truncate">₹{totalPayout.toLocaleString('en-IN')}</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <CheckCircle2 size={12} className="shrink-0" /> Scheduled in payroll
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <IndianRupee size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <IndianRupee className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pending Approvals</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">{pendingCount}</p>
-            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-              <Clock size={12} /> Awaiting manager sign-off
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Pending Approvals</p>
+            <p className="text-base sm:text-2xl font-bold text-amber-600 mt-1 truncate">{pendingCount}</p>
+            <p className="text-[11px] sm:text-xs text-amber-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <Clock size={12} className="shrink-0" /> Awaiting manager sign-off
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <Clock size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+            <Clock className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Double Rate (2.0x)</p>
-            <p className="text-2xl font-bold text-purple-600 mt-1">{doubleRateCount} Claims</p>
-            <p className="text-xs text-purple-600 mt-1 flex items-center gap-1">
-              <Zap size={12} /> Holiday / Night assignments
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Double Rate (2.0x)</p>
+            <p className="text-base sm:text-2xl font-bold text-purple-600 mt-1 truncate">{doubleRateCount} Claims</p>
+            <p className="text-[11px] sm:text-xs text-purple-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <Zap size={12} className="shrink-0" /> Holiday / Night assignments
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-            <Zap size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
+            <Zap className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>

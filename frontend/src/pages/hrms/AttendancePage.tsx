@@ -52,10 +52,12 @@ export const AttendancePage: React.FC = () => {
 
   useEffect(() => {
     fetchAttendance();
-    const unsub = subscribe('attendance_*', () => {
-      fetchAttendance();
-    });
-    return () => unsub();
+    const unsub1 = subscribe('attendance_*', () => fetchAttendance());
+    const unsub2 = subscribe('employee_*', () => fetchAttendance());
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, [statusFilter, selectedDate, viewAllDates]);
 
   const fetchAttendance = async () => {

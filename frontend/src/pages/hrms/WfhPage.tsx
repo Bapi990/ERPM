@@ -45,11 +45,11 @@ export const WfhPage: React.FC = () => {
     setLoading(true);
     try {
       const [wfhRes, empRes] = await Promise.all([
-        api.getWfhRequests(),
-        api.getEmployees(),
+        api.getWfhRequests().catch(() => ({ results: [] })),
+        api.getEmployees().catch(() => ({ results: [] })),
       ]);
-      setRequests(wfhRes?.data?.results || wfhRes?.data || []);
-      setEmployees(empRes?.data?.results || empRes?.data || []);
+      setRequests(wfhRes?.results || (Array.isArray(wfhRes) ? wfhRes : wfhRes?.data?.results || wfhRes?.data || []));
+      setEmployees(empRes?.results || (Array.isArray(empRes) ? empRes : empRes?.data?.results || empRes?.data || []));
     } catch (err) {
       console.error('Failed to load WFH requests', err);
     } finally {
@@ -59,10 +59,12 @@ export const WfhPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const unsub = subscribe('wfh_*', () => {
-      loadData();
-    });
-    return () => unsub();
+    const unsub1 = subscribe('wfh_*', () => loadData());
+    const unsub2 = subscribe('employee_*', () => loadData());
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   const handleCreateWfh = async (e: React.FormEvent) => {
@@ -161,52 +163,52 @@ export const WfhPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Requests</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{totalCount}</p>
-            <p className="text-xs text-primary-600 mt-1">Logged across all units</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Requests</p>
+            <p className="text-base sm:text-2xl font-bold text-gray-900 mt-1 truncate">{totalCount}</p>
+            <p className="text-[11px] sm:text-xs text-primary-600 mt-0.5 sm:mt-1 truncate">Logged across all units</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <Laptop size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <Laptop className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pending Authorizations</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">{pendingCount}</p>
-            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-              <Clock size={12} /> Awaiting manager sign-off
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Pending Authorizations</p>
+            <p className="text-base sm:text-2xl font-bold text-amber-600 mt-1 truncate">{pendingCount}</p>
+            <p className="text-[11px] sm:text-xs text-amber-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <Clock size={12} className="shrink-0" /> Awaiting manager sign-off
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <Clock size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+            <Clock className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Approved Requests</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{approvedCount}</p>
-            <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-              <CheckCircle2 size={12} /> Authorized remote days
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Approved Requests</p>
+            <p className="text-base sm:text-2xl font-bold text-emerald-600 mt-1 truncate">{approvedCount}</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <CheckCircle2 size={12} className="shrink-0" /> Authorized remote days
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <CheckCircle2 size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Remote Days</p>
-            <p className="text-2xl font-bold text-purple-600 mt-1">{totalDaysApproved} Days</p>
-            <p className="text-xs text-purple-600 mt-1">Approved remote tenure</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Remote Days</p>
+            <p className="text-base sm:text-2xl font-bold text-purple-600 mt-1 truncate">{totalDaysApproved} Days</p>
+            <p className="text-[11px] sm:text-xs text-purple-600 mt-0.5 sm:mt-1 truncate">Approved remote tenure</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-            <Calendar size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
+            <Calendar className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>

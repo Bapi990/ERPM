@@ -37,10 +37,30 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestInit
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.error || data.detail || `Request failed with status ${response.status}`);
+    let message = data.error || data.detail;
+    if (!message && typeof data === 'object' && Object.keys(data).length > 0) {
+      const parts = Object.entries(data).map(([k, v]) => {
+        const valStr = Array.isArray(v) ? v.join(', ') : String(v);
+        return `${k.replace(/_/g, ' ')}: ${valStr}`;
+      });
+      message = parts.join(' | ');
+    }
+    throw new Error(message || `Request failed with status ${response.status}`);
   }
 
   // Handle standard Django REST framework pagination: if response has { results: [...] }, return results or full data
+  if (data && typeof data === 'object' && !('data' in data)) {
+    try {
+      Object.defineProperty(data, 'data', {
+        get() {
+          return this;
+        },
+        enumerable: false,
+        configurable: true,
+      });
+    } catch (e) {}
+  }
+
   return data;
 }
 

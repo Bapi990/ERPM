@@ -207,32 +207,32 @@ export const LeadAssignmentPage: React.FC = () => {
       {activeTab === 'assignment' ? (
         <>
           {/* Workload Capacity Cards in Scope */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {assignableReps.map((rep: any) => (
               <div
                 key={rep.id}
-                className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-sm transition-all space-y-3"
+                className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-sm transition-all space-y-2 sm:space-y-3"
               >
                 <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-sm leading-tight">{rep.name}</h3>
-                    <span className="text-[11px] text-slate-400 font-medium">{rep.role}</span>
+                  <div className="truncate mr-1">
+                    <h3 className="font-bold text-slate-900 text-xs sm:text-sm leading-tight truncate">{rep.name}</h3>
+                    <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate block">{rep.role}</span>
                   </div>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  <span className="shrink-0 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                     {rep.active_leads} Active
                   </span>
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1 text-xs">
+                <div className="p-2 sm:p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1 text-[11px] sm:text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Pipeline Value:</span>
-                    <span className="font-mono font-bold text-emerald-700">
+                    <span className="text-slate-500 text-[10px] sm:text-xs">Pipeline:</span>
+                    <span className="font-mono font-bold text-emerald-700 text-[10px] sm:text-xs truncate">
                       ₹{rep.total_pipeline_val.toLocaleString('en-IN')}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Deals Won:</span>
-                    <span className="font-bold text-slate-800">{rep.won_deals}</span>
+                    <span className="text-slate-500 text-[10px] sm:text-xs">Won:</span>
+                    <span className="font-bold text-slate-800 text-[10px] sm:text-xs">{rep.won_deals}</span>
                   </div>
                 </div>
               </div>

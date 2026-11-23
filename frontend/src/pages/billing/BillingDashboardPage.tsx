@@ -97,110 +97,110 @@ export const BillingDashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 1: Primary Business Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Row 1: Primary Business Metrics (Responsive 2 per row on mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Sales */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Sales (Gross)</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">₹{totalSales.toLocaleString('en-IN')}</p>
-            <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-              <ArrowUpRight size={14} /> +18.4% vs last period
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">Total Sales (Gross)</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">₹{totalSales.toLocaleString('en-IN')}</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <ArrowUpRight size={14} className="shrink-0" /> +18.4% vs last period
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <Receipt size={24} />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <Receipt className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* Total Purchases */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Purchases</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">₹{totalPurchases.toLocaleString('en-IN')}</p>
-            <p className="text-xs text-blue-600 mt-1">Verified vendor bills</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">Total Purchases</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">₹{totalPurchases.toLocaleString('en-IN')}</p>
+            <p className="text-[11px] sm:text-xs text-blue-600 mt-0.5 sm:mt-1 truncate">Verified vendor bills</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-            <ShoppingCart size={24} />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
+            <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* Gross Profit */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Gross Operating Profit</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">₹{grossProfit.toLocaleString('en-IN')}</p>
-            <p className="text-xs text-emerald-600 mt-1">Margin: {totalSales > 0 ? ((grossProfit / totalSales) * 100).toFixed(1) : '30.0'}%</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">Gross Operating Profit</p>
+            <p className="text-lg sm:text-2xl font-bold text-emerald-600 mt-0.5 sm:mt-1 truncate">₹{grossProfit.toLocaleString('en-IN')}</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 truncate">Margin: {totalSales > 0 ? ((grossProfit / totalSales) * 100).toFixed(1) : '30.0'}%</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <TrendingUp size={24} />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* Net Profit */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Net Profit (Post Expense)</p>
-            <p className="text-2xl font-bold text-primary-600 mt-1">₹{netProfit.toLocaleString('en-IN')}</p>
-            <p className="text-xs text-gray-400 mt-1">Expenses: ₹{totalExpenses.toLocaleString('en-IN')}</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">Net Profit (Post Exp)</p>
+            <p className="text-lg sm:text-2xl font-bold text-primary-600 mt-0.5 sm:mt-1 truncate">₹{netProfit.toLocaleString('en-IN')}</p>
+            <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 truncate">Exp: ₹{totalExpenses.toLocaleString('en-IN')}</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-            <IndianRupee size={24} />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">
+            <IndianRupee className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>
 
-      {/* Row 2: Indian GST Position & Receivables/Payables */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Row 2: Indian GST Position & Receivables/Payables (Responsive 2 per row on mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Output GST Collected */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">GST Collected (Output)</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">₹{gstCollected.toLocaleString('en-IN')}</p>
-            <p className="text-xs text-gray-500 mt-1">CGST + SGST + IGST</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">GST Collected</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">₹{gstCollected.toLocaleString('en-IN')}</p>
+            <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 truncate">CGST + SGST + IGST</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <Shield size={24} />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+            <Shield className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* Input Tax Credit (ITC) */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Eligible ITC (GSTR-2B)</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">₹{itcAvailable.toLocaleString('en-IN')}</p>
-            <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-              <CheckCircle2 size={12} /> Claimable offset
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">Eligible ITC (GSTR-2B)</p>
+            <p className="text-lg sm:text-2xl font-bold text-emerald-600 mt-0.5 sm:mt-1 truncate">₹{itcAvailable.toLocaleString('en-IN')}</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <CheckCircle2 size={12} className="shrink-0" /> Claimable offset
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <CheckCircle2 size={24} />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* Net GST Payable */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Net GST Cash Payable</p>
-            <p className="text-2xl font-bold text-rose-600 mt-1">₹{netGstPayable.toLocaleString('en-IN')}</p>
-            <p className="text-xs text-rose-600 mt-1 flex items-center gap-1">
-              <Clock size={12} /> Due by 20th Nov (GSTR-3B)
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">Net GST Cash Payable</p>
+            <p className="text-lg sm:text-2xl font-bold text-rose-600 mt-0.5 sm:mt-1 truncate">₹{netGstPayable.toLocaleString('en-IN')}</p>
+            <p className="text-[11px] sm:text-xs text-rose-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <Clock size={12} className="shrink-0" /> Due 20th (GSTR-3B)
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-            <Clock size={24} />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold shrink-0">
+            <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         {/* Customer Receivables */}
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Customer Receivables</p>
-            <p className="text-2xl font-bold text-blue-600 mt-1">₹{totalReceivables.toLocaleString('en-IN')}</p>
-            <p className="text-xs text-gray-400 mt-1">Payables: ₹{totalPayables.toLocaleString('en-IN')}</p>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider truncate">Customer Receivables</p>
+            <p className="text-lg sm:text-2xl font-bold text-blue-600 mt-0.5 sm:mt-1 truncate">₹{totalReceivables.toLocaleString('en-IN')}</p>
+            <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1 truncate">Pay: ₹{totalPayables.toLocaleString('en-IN')}</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <CreditCard size={24} />
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>

@@ -199,15 +199,25 @@ export const DesignationsPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [desigRes, deptRes] = await Promise.all([
+      const [desigRes, deptRes, empRes] = await Promise.all([
         api.getDesignations().catch(() => ({ results: [] })),
         api.getDepartments().catch(() => ({ results: [] })),
+        api.getEmployees().catch(() => ({ results: [] })),
       ]);
 
-      const desigs = desigRes?.results || (Array.isArray(desigRes) ? desigRes : []);
-      const depts = deptRes?.results || (Array.isArray(deptRes) ? deptRes : []);
+      const emps: any[] = empRes?.results || (Array.isArray(empRes) ? empRes : empRes?.data?.results || empRes?.data || []);
+      const desigs = desigRes?.results || (Array.isArray(desigRes) ? desigRes : desigRes?.data?.results || desigRes?.data || []);
+      const depts = deptRes?.results || (Array.isArray(deptRes) ? deptRes : deptRes?.data?.results || deptRes?.data || []);
 
-      setDesignations(desigs.length > 0 ? desigs : DEFAULT_DESIGNATIONS);
+      const mappedDesigs = (desigs.length > 0 ? desigs : DEFAULT_DESIGNATIONS).map((d: any) => {
+        const liveCount = emps.filter((e) => (e.designation === d.id || e.designation_title?.toLowerCase() === d.title?.toLowerCase() || (e as any).designation?.toLowerCase() === d.title?.toLowerCase())).length;
+        return {
+          ...d,
+          employee_count: liveCount > 0 ? liveCount : (d.employee_count || 0),
+        };
+      });
+
+      setDesignations(mappedDesigs);
       setDepartments(depts.length > 0 ? depts : DEFAULT_DEPARTMENTS_LIST);
     } catch (err) {
       console.warn('Using enterprise designation defaults:', err);
@@ -221,9 +231,11 @@ export const DesignationsPage: React.FC = () => {
   useEffect(() => {
     loadData();
 
-    const unsubDesig = subscribe('designation:updated', () => loadData());
+    const unsubDesig = subscribe('designation:*', () => loadData());
+    const unsubEmp = subscribe('employee_*', () => loadData());
     return () => {
       unsubDesig?.();
+      unsubEmp?.();
     };
   }, []);
 
@@ -447,62 +459,62 @@ export const DesignationsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Clean High-Contrast Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-purple-300 hover:shadow-sm transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Defined Job Titles</span>
-            <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
-              <Award className="w-4 h-4" />
+      {/* 4 Clean High-Contrast Stat Cards (Responsive 2 per row on mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white border border-slate-200/90 p-3.5 sm:p-5 rounded-2xl shadow-xs hover:border-purple-300 hover:shadow-sm transition flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Job Titles</span>
+            <div className="p-2 sm:p-2.5 bg-purple-50 text-purple-600 rounded-xl shrink-0">
+              <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-slate-900">{metrics.total}</span>
-            <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md">Total</span>
+          <div className="mt-2 sm:mt-3 flex items-baseline space-x-1.5 sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-slate-900">{metrics.total}</span>
+            <span className="text-[10px] sm:text-xs font-semibold text-purple-600 bg-purple-50 px-1.5 sm:px-2 py-0.5 rounded-md">Total</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Unique positions across organization</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1 truncate">Unique positions across organization</p>
         </div>
 
-        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-amber-300 hover:shadow-sm transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Executive & CXO (L6-L7)</span>
-            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
-              <Crown className="w-4 h-4" />
+        <div className="bg-white border border-slate-200/90 p-3.5 sm:p-5 rounded-2xl shadow-xs hover:border-amber-300 hover:shadow-sm transition flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Leadership</span>
+            <div className="p-2 sm:p-2.5 bg-amber-50 text-amber-600 rounded-xl shrink-0">
+              <Crown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-slate-900">{metrics.executive}</span>
-            <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">Leadership</span>
+          <div className="mt-2 sm:mt-3 flex items-baseline space-x-1.5 sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-slate-900">{metrics.executive}</span>
+            <span className="text-[10px] sm:text-xs font-semibold text-amber-600 bg-amber-50 px-1.5 sm:px-2 py-0.5 rounded-md">L6-L7</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Board, VP, Director & CXO roles</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1 truncate">Board, VP, Director & CXO roles</p>
         </div>
 
-        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-blue-300 hover:shadow-sm transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Senior & Mid (L4-L5)</span>
-            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-              <Star className="w-4 h-4" />
+        <div className="bg-white border border-slate-200/90 p-3.5 sm:p-5 rounded-2xl shadow-xs hover:border-blue-300 hover:shadow-sm transition flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Core Staff</span>
+            <div className="p-2 sm:p-2.5 bg-blue-50 text-blue-600 rounded-xl shrink-0">
+              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-slate-900">{metrics.senior}</span>
-            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">Core Staff</span>
+          <div className="mt-2 sm:mt-3 flex items-baseline space-x-1.5 sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-slate-900">{metrics.senior}</span>
+            <span className="text-[10px] sm:text-xs font-semibold text-blue-600 bg-blue-50 px-1.5 sm:px-2 py-0.5 rounded-md">L4-L5</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Senior specialists & managers</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1 truncate">Senior specialists & managers</p>
         </div>
 
-        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-emerald-300 hover:shadow-sm transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Associate & Entry (L1-L3)</span>
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-              <Users className="w-4 h-4" />
+        <div className="bg-white border border-slate-200/90 p-3.5 sm:p-5 rounded-2xl shadow-xs hover:border-emerald-300 hover:shadow-sm transition flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Entry Roles</span>
+            <div className="p-2 sm:p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-slate-900">{metrics.associate}</span>
-            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Growth</span>
+          <div className="mt-2 sm:mt-3 flex items-baseline space-x-1.5 sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-slate-900">{metrics.associate}</span>
+            <span className="text-[10px] sm:text-xs font-semibold text-emerald-600 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md">L1-L3</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Associates, analysts & trainees</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1 truncate">Associates, analysts & trainees</p>
         </div>
       </div>
 

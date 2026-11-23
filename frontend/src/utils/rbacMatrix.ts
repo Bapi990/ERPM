@@ -66,6 +66,11 @@ export const ROLE_CATEGORIES = [
 
 export const SYSTEM_USERS_ROSTER: SystemUserOption[] = [
   { id: 'ADM-1001', name: 'Super Admin', email: 'superadmin12@gmail.com', role_code: 'super_admin', role_name: 'Super Admin', department: 'Executive Board', phone: '+91 1234567890', status: 'active', created_at: '2026-01-10' },
+  { id: 'HR-1001', name: 'Priya Sharma', email: 'hr@odiaserp.com', role_code: 'hr', role_name: 'HR Director', department: 'Human Resources & Talent', phone: '+91 98765 43211', status: 'active', created_at: '2026-02-01' },
+  { id: 'MGR-1001', name: 'Rajesh Verma', email: 'manager@odiaserp.com', role_code: 'manager', role_name: 'Team Manager', department: 'Software Engineering & Cloud', phone: '+91 98765 43212', status: 'active', created_at: '2026-02-05' },
+  { id: 'EMP-1001', name: 'Amit Patel', email: 'employee@odiaserp.com', role_code: 'employee', role_name: 'Associate Staff', department: 'Software Engineering & Cloud', phone: '+91 98765 43213', status: 'active', created_at: '2026-03-01' },
+  { id: 'SLS-1001', name: 'Sneha Mohanty', email: 'sales@odiaserp.com', role_code: 'sales', role_name: 'Sales Director', department: 'Enterprise Sales & CRM', phone: '+91 98765 43214', status: 'active', created_at: '2026-03-10' },
+  { id: 'FIN-1001', name: 'Sunil Sahoo', email: 'accounts@odiaserp.com', role_code: 'accounts', role_name: 'Finance Controller', department: 'Finance & Billing Accounts', phone: '+91 98765 43215', status: 'active', created_at: '2026-03-15' },
 ];
 
 export const ALL_SYSTEM_SUBMODULES: SubmoduleItem[] = [
@@ -498,7 +503,18 @@ export function getSystemUsers(): SystemUserOption[] {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
         const cleaned = parsed.filter((u: SystemUserOption) => !u.email?.includes('greenbacks.corp'));
-        if (cleaned.length > 0) return cleaned;
+        const existingEmails = new Set(cleaned.map((u: SystemUserOption) => u.email?.toLowerCase()));
+        let changed = false;
+        SYSTEM_USERS_ROSTER.forEach((defUser) => {
+          if (!existingEmails.has(defUser.email?.toLowerCase())) {
+            cleaned.push(defUser);
+            changed = true;
+          }
+        });
+        if (changed) {
+          saveSystemUsers(cleaned);
+        }
+        return cleaned;
       }
     }
   } catch (e) {

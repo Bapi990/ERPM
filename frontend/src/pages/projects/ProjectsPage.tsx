@@ -7,7 +7,8 @@ import {
   Activity, FileText, Check, X, RotateCcw, MessageSquare, Send,
   CalendarDays, Sliders, Sparkles, TrendingUp, AlertCircle,
   Award, Upload, Download, Search, FileCheck, Play, HelpCircle,
-  CheckCircle, ThumbsUp, AlertTriangle, UserCheck, Briefcase
+  CheckCircle, ThumbsUp, AlertTriangle, UserCheck, Briefcase, User,
+  FolderPlus, UserPlus, Paperclip
 } from 'lucide-react';
 import { DataTable, type ColumnDef } from '../../components/common/DataTable';
 import { Modal } from '../../components/common/Modal';
@@ -45,17 +46,41 @@ export interface ProjectMilestone {
   payment_trigger_amount: number;
 }
 
+export interface AttachedProjectDoc {
+  id: string;
+  name: string;
+  file_name: string;
+  file_size?: string;
+  doc_type: string;
+  uploaded_at: string;
+  file_data?: string;
+}
+
+export interface DelegatedStaff {
+  id: string;
+  employee_id?: string;
+  name: string;
+  role: string;
+  delegated_by: string;
+  delegated_at: string;
+  deliverable: string;
+  deadline: string;
+  status: 'assigned' | 'in_progress' | 'completed';
+}
+
 export interface Project {
   id: string;
   project_code: string;
   title: string;
   client_name: string;
   lead_manager: string;
-  assigned_to: string; // Assignee: Manager or Employee
+  assigned_to: string; // Tier 1 Assignee: Manager or HR Leader
   assigned_to_role: string;
-  assigned_by_hr: string; // HR supervisor name who assigned the project
+  assigned_by_hr: string; // Executive supervisor name who assigned the project
+  assigned_at?: string; // Formatted date and time of assignment
   start_date: string;
-  deadline: string;
+  deadline: string; // Last date
+  last_date?: string; // Explicit last date
   budget: number;
   spent: number;
   progress: number; // 0 to 100%
@@ -69,6 +94,11 @@ export interface Project {
   checklists: ProjectChecklistItem[];
   milestones?: ProjectMilestone[];
   description?: string;
+  execution_plan?: string;
+  category?: string;
+  priority?: 'urgent' | 'high' | 'medium' | 'low';
+  documents?: AttachedProjectDoc[];
+  delegated_employees?: DelegatedStaff[];
 }
 
 export interface TaskItem {
@@ -79,6 +109,8 @@ export interface TaskItem {
   title: string;
   assignee: string;
   assignee_role: string;
+  assigned_by?: string;
+  assigned_at?: string;
   due_date: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   progress: number;
@@ -119,10 +151,10 @@ const INITIAL_PROJECTS: Project[] = [
     project_code: 'PRJ-2026-001',
     title: 'Odias Cloud ERP Enterprise 2.0',
     client_name: 'Apex Global Enterprises',
-    lead_manager: 'Rahul Verma',
-    assigned_to: 'Rohan Mehta',
-    assigned_to_role: 'Associate Staff (Frontend)',
-    assigned_by_hr: 'Ananya Sharma (HR Director)',
+    lead_manager: 'Rajesh Verma',
+    assigned_to: 'Amit Patel',
+    assigned_to_role: 'Associate Software Engineer',
+    assigned_by_hr: 'Priya Sharma (HR Director)',
     start_date: '2026-10-01',
     deadline: '2026-12-31',
     budget: 1500000,
@@ -178,10 +210,10 @@ const INITIAL_PROJECTS: Project[] = [
     project_code: 'PRJ-2026-002',
     title: 'Automated GST E-Invoicing Engine',
     client_name: 'Nexus Techworks Pvt Ltd',
-    lead_manager: 'Rahul Verma',
-    assigned_to: 'Vikram Malhotra',
-    assigned_to_role: 'Finance Controller',
-    assigned_by_hr: 'Ananya Sharma (HR Director)',
+    lead_manager: 'Rajesh Verma',
+    assigned_to: 'Sunil Sahoo',
+    assigned_to_role: 'Accounts & Finance Lead',
+    assigned_by_hr: 'Priya Sharma (HR Director)',
     start_date: '2026-11-01',
     deadline: '2026-11-30',
     budget: 650000,
@@ -233,10 +265,10 @@ const INITIAL_PROJECTS: Project[] = [
     project_code: 'PRJ-2026-003',
     title: 'Mobile WebRTC Attendance App',
     client_name: 'Quantum Retail Brands',
-    lead_manager: 'Rahul Verma',
-    assigned_to: 'Rohan Mehta',
-    assigned_to_role: 'Associate Staff',
-    assigned_by_hr: 'Ananya Sharma (HR Director)',
+    lead_manager: 'Rajesh Verma',
+    assigned_to: 'Sneha Mohanty',
+    assigned_to_role: 'Sales Director',
+    assigned_by_hr: 'Priya Sharma (HR Director)',
     start_date: '2026-09-15',
     deadline: '2026-11-10',
     budget: 450000,
@@ -290,10 +322,10 @@ const INITIAL_PROJECTS: Project[] = [
     project_code: 'PRJ-2026-004',
     title: 'AI Lead Recommendation & WhatsApp Webhook',
     client_name: 'Kalinga Infotech Solutions',
-    lead_manager: 'Rahul Verma',
-    assigned_to: 'Rohan Mehta',
-    assigned_to_role: 'Associate Staff',
-    assigned_by_hr: 'Ananya Sharma (HR Director)',
+    lead_manager: 'Rajesh Verma',
+    assigned_to: 'Sneha Mohanty',
+    assigned_to_role: 'Sales Director',
+    assigned_by_hr: 'Priya Sharma (HR Director)',
     start_date: '2026-11-16',
     deadline: '2026-12-15',
     budget: 380000,
@@ -330,15 +362,15 @@ const INITIAL_TASKS: TaskItem[] = [
     project_id: 'prj-1',
     project_title: 'Odias Cloud ERP Enterprise 2.0',
     title: 'Integrate WebRTC Camera Selfie Capture',
-    assignee: 'Rohan Mehta',
-    assignee_role: 'Associate Staff',
+    assignee: 'Amit Patel',
+    assignee_role: 'Associate Software Engineer',
     due_date: '2026-11-15',
     priority: 'high',
     progress: 100,
     status: 'done',
     completed_at: '2026-11-15 04:30 PM',
     remarks: [
-      { id: 'tr-1', author_name: 'Rohan Mehta', author_role: 'Associate Staff', timestamp: '2026-11-15 04:30 PM', progress_at_moment: 100, text: 'Completed and verified across Chrome and Firefox.' }
+      { id: 'tr-1', author_name: 'Amit Patel', author_role: 'Associate Software Engineer', timestamp: '2026-11-15 04:30 PM', progress_at_moment: 100, text: 'Completed and verified across Chrome and Firefox.' }
     ]
   },
   {
@@ -347,14 +379,14 @@ const INITIAL_TASKS: TaskItem[] = [
     project_id: 'prj-1',
     project_title: 'Odias Cloud ERP Enterprise 2.0',
     title: 'Dynamic RBAC matrix with Add/View/Edit/Delete',
-    assignee: 'Ananya Sharma',
-    assignee_role: 'HR Director',
+    assignee: 'Priya Sharma',
+    assignee_role: 'HR Manager',
     due_date: '2026-11-18',
     priority: 'urgent',
     progress: 80,
     status: 'in_progress',
     remarks: [
-      { id: 'tr-2', author_name: 'Ananya Sharma', author_role: 'HR Director', timestamp: '2026-11-16 02:00 PM', progress_at_moment: 80, text: 'Clearance matrix moved to dossier bottom per prompt requirement.' }
+      { id: 'tr-2', author_name: 'Priya Sharma', author_role: 'HR Manager', timestamp: '2026-11-16 02:00 PM', progress_at_moment: 80, text: 'Clearance matrix moved to dossier bottom per prompt requirement.' }
     ]
   },
   {
@@ -363,14 +395,14 @@ const INITIAL_TASKS: TaskItem[] = [
     project_id: 'prj-2',
     project_title: 'Automated GST E-Invoicing Engine',
     title: 'Tax invoice PDF generation & QR code stamp',
-    assignee: 'Vikram Malhotra',
-    assignee_role: 'Finance Controller',
+    assignee: 'Sunil Sahoo',
+    assignee_role: 'Accounts & Finance Lead',
     due_date: '2026-11-20',
     priority: 'medium',
     progress: 50,
     status: 'in_progress',
     remarks: [
-      { id: 'tr-3', author_name: 'Vikram Malhotra', author_role: 'Finance Controller', timestamp: '2026-11-16 11:30 AM', progress_at_moment: 50, text: 'PDF canvas configured with Bank details and Authorized Signatory.' }
+      { id: 'tr-3', author_name: 'Sunil Sahoo', author_role: 'Accounts & Finance Lead', timestamp: '2026-11-16 11:30 AM', progress_at_moment: 50, text: 'PDF canvas configured with Bank details and Authorized Signatory.' }
     ]
   },
   {
@@ -379,8 +411,8 @@ const INITIAL_TASKS: TaskItem[] = [
     project_id: 'prj-4',
     project_title: 'AI Lead Recommendation & WhatsApp Webhook',
     title: 'Configure Inbound Webhook Listener for Meta WhatsApp API',
-    assignee: 'Rohan Mehta',
-    assignee_role: 'Associate Staff',
+    assignee: 'Sneha Mohanty',
+    assignee_role: 'Sales Director',
     due_date: '2026-11-25',
     priority: 'high',
     progress: 0,
@@ -486,7 +518,7 @@ export const ProjectsPage: React.FC = () => {
   // Persistent State (Backed by LocalStorage with fallback)
   const [projects, setProjects] = useState<Project[]>(() => {
     try {
-      const saved = localStorage.getItem('odias_projects_master_v3');
+      const saved = localStorage.getItem('odias_projects_master_v4');
       return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
     } catch {
       return INITIAL_PROJECTS;
@@ -495,7 +527,7 @@ export const ProjectsPage: React.FC = () => {
 
   const [tasks, setTasks] = useState<TaskItem[]>(() => {
     try {
-      const saved = localStorage.getItem('odias_tasks_master_v3');
+      const saved = localStorage.getItem('odias_tasks_master_v4');
       return saved ? JSON.parse(saved) : INITIAL_TASKS;
     } catch {
       return INITIAL_TASKS;
@@ -504,7 +536,7 @@ export const ProjectsPage: React.FC = () => {
 
   const [dwrs, setDwrs] = useState<DailyWorkReport[]>(() => {
     try {
-      const saved = localStorage.getItem('odias_dwr_master_v3');
+      const saved = localStorage.getItem('odias_dwr_master_v4');
       return saved ? JSON.parse(saved) : INITIAL_DWR;
     } catch {
       return INITIAL_DWR;
@@ -515,15 +547,15 @@ export const ProjectsPage: React.FC = () => {
 
   // Sync to LocalStorage on updates
   useEffect(() => {
-    localStorage.setItem('odias_projects_master_v3', JSON.stringify(projects));
+    localStorage.setItem('odias_projects_master_v4', JSON.stringify(projects));
   }, [projects]);
 
   useEffect(() => {
-    localStorage.setItem('odias_tasks_master_v3', JSON.stringify(tasks));
+    localStorage.setItem('odias_tasks_master_v4', JSON.stringify(tasks));
   }, [tasks]);
 
   useEffect(() => {
-    localStorage.setItem('odias_dwr_master_v3', JSON.stringify(dwrs));
+    localStorage.setItem('odias_dwr_master_v4', JSON.stringify(dwrs));
   }, [dwrs]);
 
   // Notifications Toast
@@ -547,22 +579,61 @@ export const ProjectsPage: React.FC = () => {
   const [remarkModalProject, setRemarkModalProject] = useState<Project | null>(null);
   const [newRemarkText, setNewRemarkText] = useState<string>('');
 
-  // Project Creation Form State
+  // Comprehensive Project Creation Form State
   const [newTitle, setNewTitle] = useState('');
+  const [newProjectCode, setNewProjectCode] = useState('');
   const [newClient, setNewClient] = useState('');
+  const [newCategory, setNewCategory] = useState('Software Engineering & Cloud');
+  const [newPriority, setNewPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('high');
   const [newBudget, setNewBudget] = useState(500000);
-  const [newLeadManager, setNewLeadManager] = useState('Rahul Verma');
-  const [newAssignee, setNewAssignee] = useState('Rohan Mehta');
-  const [newAssigneeRole, setNewAssigneeRole] = useState('Associate Staff');
+  const [newLeadManager, setNewLeadManager] = useState('Rajesh Verma');
+  const [newAssignee, setNewAssignee] = useState('Rajesh Verma');
+  const [newAssigneeRole, setNewAssigneeRole] = useState('Team Manager');
+  const [newStartDate, setNewStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [newDeadline, setNewDeadline] = useState(
     new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
   );
   const [newDescription, setNewDescription] = useState('');
+  const [newExecutionPlan, setNewExecutionPlan] = useState('');
+  const [newDocuments, setNewDocuments] = useState<AttachedProjectDoc[]>([]);
+
+  // Multi-tier Delegation Modal State (Manager / HR assigns to Employee)
+  const [delegateModalProject, setDelegateModalProject] = useState<Project | null>(null);
+  const [delegateEmployee, setDelegateEmployee] = useState('');
+  const [delegateRole, setDelegateRole] = useState('Associate Staff');
+  const [delegateDeliverable, setDelegateDeliverable] = useState('');
+  const [delegateInstructions, setDelegateInstructions] = useState('');
+  const [delegateDeadline, setDelegateDeadline] = useState(
+    new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]
+  );
+  const [delegatePriority, setDelegatePriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('high');
+
+  // Helpers for Project Multi-Document Attachments
+  const handleAddDocumentItem = () => {
+    const newDoc: AttachedProjectDoc = {
+      id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      name: '',
+      file_name: '',
+      doc_type: 'Technical Specification',
+      uploaded_at: new Date().toLocaleDateString('en-IN'),
+    };
+    setNewDocuments((prev) => [...prev, newDoc]);
+  };
+
+  const handleUpdateDocumentItem = (id: string, field: keyof AttachedProjectDoc, value: string) => {
+    setNewDocuments((prev) =>
+      prev.map((doc) => (doc.id === id ? { ...doc, [field]: value } : doc))
+    );
+  };
+
+  const handleRemoveDocumentItem = (id: string) => {
+    setNewDocuments((prev) => prev.filter((doc) => doc.id !== id));
+  };
 
   // Task Creation Form State
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskProject, setNewTaskProject] = useState(projects[0]?.title || '');
-  const [newTaskAssignee, setNewTaskAssignee] = useState('Rohan Mehta');
+  const [newTaskAssignee, setNewTaskAssignee] = useState('Amit Patel');
   const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('high');
   const [newTaskDeadline, setNewTaskDeadline] = useState(
     new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
@@ -597,14 +668,55 @@ export const ProjectsPage: React.FC = () => {
           }));
           setActiveEmployees(mapped);
           if (mapped[0]?.name) {
-            setNewAssignee((prev) => prev || mapped[0].name);
-            setNewTaskAssignee((prev) => prev || mapped[0].name);
+            setNewAssignee(mapped[0].name);
+            setNewAssigneeRole(mapped[0].role_name);
+            setNewTaskAssignee(mapped[0].name);
+            const mgr = mapped.find((m: { id: number; name: string; role_name: string }) => m.role_name.toLowerCase().includes('manager')) || mapped[0];
+            setNewLeadManager(mgr.name);
           }
         }
       } catch (e) {}
     };
     fetchEmps();
   }, []);
+
+  useEffect(() => {
+    if (projects.length > 0 && (!newTaskProject || !projects.some(p => p.title === newTaskProject))) {
+      setNewTaskProject(projects[0].title);
+    }
+  }, [projects, newTaskProject]);
+
+  const currentFullName = (user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`).trim().toLowerCase();
+  const currentEmail = (user?.email || '').toLowerCase();
+
+  const isMyProject = (p: Project) => {
+    const lead = (p.lead_manager || '').toLowerCase();
+    const assigned = (p.assigned_to || '').toLowerCase();
+    return (
+      (currentFullName && (lead.includes(currentFullName) || assigned.includes(currentFullName))) ||
+      (currentEmail && (lead.includes(currentEmail) || assigned.includes(currentEmail))) ||
+      user?.role_code === 'super_admin'
+    );
+  };
+
+  const myProjects = useMemo(() => {
+    return projects.filter(isMyProject);
+  }, [projects, currentFullName, currentEmail, user?.role_code]);
+
+  const myTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      const a = (t.assignee || '').toLowerCase();
+      return (
+        (currentFullName && (a.includes(currentFullName) || currentFullName.includes(a))) ||
+        (currentEmail && (a.includes(currentEmail) || currentEmail.includes(a))) ||
+        user?.role_code === 'super_admin'
+      );
+    });
+  }, [tasks, currentFullName, currentEmail, user?.role_code]);
+
+  const pendingCount = useMemo(() => {
+    return projects.filter((p) => p.assignment_status === 'pending_acceptance').length;
+  }, [projects]);
 
   // Realtime RBAC Action Permissions Listener
   const [, setRbacTick] = useState(0);
@@ -631,25 +743,52 @@ export const ProjectsPage: React.FC = () => {
   // 1. HR / Admin Creates & Assigns Project
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
-    const hrAuthor = user?.role_code === 'hr_manager' ? user.full_name : 'Ananya Sharma (HR Director)';
-    const nextCode = `PRJ-2026-${String(projects.length + 1).padStart(3, '0')}`;
+    if (!newTitle.trim()) {
+      showToast('⚠️ Project Title is required');
+      return;
+    }
+    const hrAuthor = user?.full_name || (user?.role_code === 'hr_manager' ? 'HR Directorate' : 'Executive Management');
+    const autoCode = `PRJ-2026-${String(projects.length + 1).padStart(3, '0')}`;
+    const effectiveCode = newProjectCode.trim() || autoCode;
+    const effectiveAssignee = newAssignee || (activeEmployees[0]?.name || 'Amit Patel');
+    const matchedEmp = activeEmployees.find(emp => emp.name === effectiveAssignee);
+    const effectiveRole = matchedEmp?.role_name || newAssigneeRole || 'Associate Staff';
+    const nowFormatted = new Date().toLocaleString('en-IN');
+    const effectiveDeadline = newDeadline || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+
     const p: Project = {
       id: `prj-${Date.now()}`,
-      project_code: nextCode,
-      title: newTitle,
-      client_name: newClient,
-      lead_manager: newLeadManager,
-      assigned_to: newAssignee,
-      assigned_to_role: newAssigneeRole,
-      assigned_by_hr: hrAuthor || 'HR Directorate',
-      start_date: new Date().toISOString().split('T')[0],
-      deadline: newDeadline,
-      budget: Number(newBudget),
+      project_code: effectiveCode,
+      title: newTitle.trim(),
+      client_name: newClient.trim() || 'Internal Enterprise Operations',
+      lead_manager: newLeadManager || 'Rajesh Verma',
+      assigned_to: effectiveAssignee,
+      assigned_to_role: effectiveRole,
+      assigned_by_hr: hrAuthor,
+      assigned_at: nowFormatted,
+      start_date: newStartDate || new Date().toISOString().split('T')[0],
+      deadline: effectiveDeadline,
+      last_date: effectiveDeadline,
+      budget: Number(newBudget) || 500000,
       spent: 0,
       progress: 0,
       assignment_status: 'pending_acceptance',
       status: 'assigned',
-      description: newDescription || 'Enterprise project assignment initiated by HR.',
+      category: newCategory,
+      priority: newPriority,
+      description: newDescription.trim() || 'Enterprise project assignment initiated by Executive Directorate.',
+      execution_plan: newExecutionPlan.trim() || '1. Sprint Kickoff and Requirement Analysis\n2. Architecture & Data Schema Setup\n3. Front-end Component Integration\n4. API & Real-time WebSockets Sync\n5. UAT & Client Delivery Sign-Off',
+      documents: newDocuments.length > 0 ? [...newDocuments] : [
+        {
+          id: `doc-${Date.now()}-spec`,
+          name: `${newTitle.trim()} - Technical Specification`,
+          file_name: `${effectiveCode}_Specification.pdf`,
+          file_size: '2.4 MB',
+          doc_type: 'Technical Specification',
+          uploaded_at: new Date().toLocaleDateString('en-IN'),
+        }
+      ],
+      delegated_employees: [],
       checklists: [
         { id: `c-${Date.now()}-1`, text: 'Review scope and project requirements', done: false },
         { id: `c-${Date.now()}-2`, text: 'Core sprint implementation', done: false },
@@ -658,26 +797,33 @@ export const ProjectsPage: React.FC = () => {
       remarks: [
         {
           id: `r-${Date.now()}`,
-          author_name: hrAuthor || 'HR Directorate',
-          author_role: 'HR Director',
-          timestamp: new Date().toLocaleString(),
+          author_name: hrAuthor,
+          author_role: user?.role_name || 'HR Director',
+          timestamp: nowFormatted,
           progress_at_moment: 0,
-          text: `Project officially assigned by HR to ${newAssignee} (${newAssigneeRole}). Awaiting acceptance.`,
+          text: `Project officially assigned by HR to ${effectiveAssignee} (${effectiveRole}) with last date ${effectiveDeadline}. Awaiting acceptance.`,
         },
       ],
       milestones: [
-        { id: `m-${Date.now()}-1`, title: 'Sprint Kickoff & Setup', target_date: newDeadline, status: 'in_progress', payment_trigger_amount: Number(newBudget) * 0.5 },
-        { id: `m-${Date.now()}-2`, title: 'Final Delivery & Acceptance', target_date: newDeadline, status: 'pending', payment_trigger_amount: Number(newBudget) * 0.5 },
+        { id: `m-${Date.now()}-1`, title: 'Sprint Kickoff & Setup', target_date: effectiveDeadline, status: 'in_progress', payment_trigger_amount: (Number(newBudget) || 500000) * 0.5 },
+        { id: `m-${Date.now()}-2`, title: 'Final Delivery & Acceptance', target_date: effectiveDeadline, status: 'pending', payment_trigger_amount: (Number(newBudget) || 500000) * 0.5 },
       ]
     };
 
-    setProjects([p, ...projects]);
+    setProjects((prev) => {
+      const updated = [p, ...prev];
+      try {
+        localStorage.setItem('odias_projects_master_v4', JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
+
     setProjectModalOpen(false);
 
     emitEvent(
       'project.created',
-      '🚀 New Project Assigned',
-      `Project "${p.title}" assigned to ${p.assigned_to}. Deadline: ${p.deadline}`,
+      '🚀 New Project Created & Assigned',
+      `Project "${p.title}" assigned to ${p.assigned_to}. Last Date: ${p.deadline}`,
       'success',
       p.assigned_to,
       undefined,
@@ -685,28 +831,182 @@ export const ProjectsPage: React.FC = () => {
     );
     api.createNotification({
       title: '🚀 New Project Assigned',
-      message: `Project "${p.title}" assigned to you. Deadline: ${p.deadline}`,
+      message: `Project "${p.title}" assigned to you. Last Date: ${p.deadline}`,
       notification_type: 'info',
       link: '/app/projects/all',
       target_name: p.assigned_to
     }).catch(() => {});
 
-    showToast(`Project "${p.title}" assigned by HR to ${p.assigned_to}!`);
+    showToast(`🎉 Project "${p.title}" successfully created and assigned to ${p.assigned_to}!`);
 
     // Reset Form
     setNewTitle('');
+    setNewProjectCode('');
     setNewClient('');
     setNewDescription('');
+    setNewExecutionPlan('');
+    setNewDocuments([]);
+  };
+
+  // 1B. Multi-Tier Delegation: Manager / HR assigns Deliverables to Employees
+  const handleDelegateToEmployee = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!delegateModalProject) return;
+    if (!delegateEmployee) {
+      showToast('⚠️ Please select an employee to delegate');
+      return;
+    }
+    if (!delegateDeliverable.trim()) {
+      showToast('⚠️ Deliverable / Sprint Task title is required');
+      return;
+    }
+
+    const delegatorName = user?.full_name || delegateModalProject.assigned_to || delegateModalProject.lead_manager || 'Team Lead';
+    const nowFormatted = new Date().toLocaleString('en-IN');
+    const newStaff: DelegatedStaff = {
+      id: `del-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      name: delegateEmployee,
+      role: delegateRole,
+      delegated_by: delegatorName,
+      delegated_at: nowFormatted,
+      deliverable: delegateDeliverable.trim(),
+      deadline: delegateDeadline,
+      status: 'assigned',
+    };
+
+    // Create corresponding task item in tasks list
+    const newTaskObj: TaskItem = {
+      id: `tsk-${Date.now()}`,
+      task_code: `TSK-${String(tasks.length + 101)}`,
+      project_id: delegateModalProject.id,
+      project_title: delegateModalProject.title,
+      title: delegateDeliverable.trim(),
+      assignee: delegateEmployee,
+      assignee_role: delegateRole,
+      assigned_by: delegatorName,
+      assigned_at: nowFormatted,
+      due_date: delegateDeadline,
+      priority: delegatePriority,
+      progress: 0,
+      status: 'assigned',
+      remarks: [
+        {
+          id: `tr-${Date.now()}`,
+          author_name: delegatorName,
+          author_role: user?.role_name || 'Manager',
+          timestamp: nowFormatted,
+          progress_at_moment: 0,
+          text: `Sprint deliverable delegated to ${delegateEmployee}. Instructions: ${delegateInstructions || 'Execute as per project scope specifications.'}`,
+        },
+      ],
+    };
+
+    // Update projects list
+    setProjects((prev) => {
+      const updated = prev.map((p) => {
+        if (p.id === delegateModalProject.id) {
+          const existingDelegated = p.delegated_employees || [];
+          const existingChecklists = p.checklists || [];
+          const updatedDelegated = [...existingDelegated, newStaff];
+          const updatedChecklists = [
+            ...existingChecklists,
+            {
+              id: `c-${Date.now()}`,
+              text: `${delegateDeliverable.trim()} (${delegateEmployee})`,
+              done: false,
+              assigned_to: delegateEmployee,
+            },
+          ];
+          const updatedRemarks = [
+            ...p.remarks,
+            {
+              id: `r-${Date.now()}`,
+              author_name: delegatorName,
+              author_role: user?.role_name || 'Manager',
+              timestamp: nowFormatted,
+              progress_at_moment: p.progress,
+              text: `Delegated deliverable "${delegateDeliverable.trim()}" to ${delegateEmployee} (${delegateRole}) with deadline ${delegateDeadline}.`,
+            },
+          ];
+          return {
+            ...p,
+            delegated_employees: updatedDelegated,
+            checklists: updatedChecklists,
+            remarks: updatedRemarks,
+          };
+        }
+        return p;
+      });
+      try {
+        localStorage.setItem('odias_projects_master_v4', JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
+
+    // Update tasks list
+    setTasks((prev) => {
+      const updatedTasks = [newTaskObj, ...prev];
+      try {
+        localStorage.setItem('odias_tasks_master_v4', JSON.stringify(updatedTasks));
+      } catch (err) {}
+      return updatedTasks;
+    });
+
+    // Sync viewProject if currently opened
+    if (viewProject && viewProject.id === delegateModalProject.id) {
+      setViewProject((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          delegated_employees: [...(prev.delegated_employees || []), newStaff],
+          checklists: [
+            ...prev.checklists,
+            {
+              id: `c-${Date.now()}`,
+              text: `${delegateDeliverable.trim()} (${delegateEmployee})`,
+              done: false,
+              assigned_to: delegateEmployee,
+            },
+          ],
+          remarks: [
+            ...prev.remarks,
+            {
+              id: `r-${Date.now()}`,
+              author_name: delegatorName,
+              author_role: user?.role_name || 'Manager',
+              timestamp: nowFormatted,
+              progress_at_moment: prev.progress,
+              text: `Delegated deliverable "${delegateDeliverable.trim()}" to ${delegateEmployee} (${delegateRole}) with deadline ${delegateDeadline}.`,
+            },
+          ],
+        };
+      });
+    }
+
+    emitEvent(
+      'task.assigned',
+      '🎯 Task Delegated to Staff',
+      `Deliverable "${delegateDeliverable.trim()}" delegated to ${delegateEmployee} on project "${delegateModalProject.title}"`,
+      'info',
+      delegateEmployee,
+      undefined,
+      '/app/projects/tasks'
+    );
+
+    showToast(`✅ Successfully delegated "${delegateDeliverable.trim()}" to ${delegateEmployee}!`);
+    setDelegateModalProject(null);
+    setDelegateDeliverable('');
+    setDelegateInstructions('');
   };
 
   // 2. Assignee Accepts Assignment
   const handleAcceptAssignment = (projectId: string) => {
-    const author = user?.full_name || 'Rohan Mehta';
+    const author = user?.full_name || 'Staff Member';
     const role = user?.role_name || 'Associate Staff';
     const ts = new Date().toLocaleString();
 
-    setProjects((prev) =>
-      prev.map((p) => {
+    setProjects((prev) => {
+      const updated = prev.map((p) => {
         if (p.id === projectId) {
           const updatedRemarks = [
             ...p.remarks,
@@ -721,36 +1021,42 @@ export const ProjectsPage: React.FC = () => {
           ];
           return {
             ...p,
-            assignment_status: 'accepted',
+            assignment_status: 'accepted' as const,
             accepted_at: ts,
             remarks: updatedRemarks,
           };
         }
         return p;
-      })
-    );
+      });
+      try {
+        localStorage.setItem('odias_projects_master_v4', JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
 
     if (viewProject && viewProject.id === projectId) {
       setViewProject((prev) => prev ? { ...prev, assignment_status: 'accepted', accepted_at: ts } : null);
     }
 
+    const matched = projects.find(p => p.id === projectId);
+
     emitEvent(
       'project.accepted',
       '✅ Assignment Accepted',
-      `${author} accepted project "${viewProject?.title || 'Project'}". Ready for sprint execution.`,
+      `${author} accepted project "${matched?.title || 'Project'}". Ready for sprint execution.`,
       'info',
-      viewProject?.lead_manager || 'super_admin',
+      matched?.lead_manager || 'super_admin',
       undefined,
       '/app/projects/all'
     );
     api.createNotification({
       title: '✅ Assignment Accepted',
-      message: `${author} accepted assignment for project "${viewProject?.title || 'Project'}".`,
+      message: `${author} accepted assignment for project "${matched?.title || 'Project'}".`,
       notification_type: 'info',
       link: '/app/projects/all',
-      target_name: viewProject?.lead_manager || 'super_admin'
+      target_name: matched?.lead_manager || 'super_admin'
     }).catch(() => {});
-    showToast(`Assignment successfully accepted by ${author}! You can now start work.`);
+    showToast(`🎉 Assignment successfully accepted! You can now start sprint execution.`);
   };
 
   // 3. Start Work
@@ -1000,30 +1306,67 @@ export const ProjectsPage: React.FC = () => {
   // Task Creation Handler
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newTaskTitle.trim()) {
+      showToast('⚠️ Task title is required');
+      return;
+    }
+    const matchedProject = projects.find(p => p.title === newTaskProject) || projects[0];
+    const effectiveAssignee = newTaskAssignee || (activeEmployees[0]?.name || 'Amit Patel');
+    const matchedEmp = activeEmployees.find(emp => emp.name === effectiveAssignee);
+    const effectiveRole = matchedEmp?.role_name || 'Associate Staff';
+
     const t: TaskItem = {
       id: `tsk-${Date.now()}`,
       task_code: `TSK-${tasks.length + 101}`,
-      project_id: projects[0]?.id || 'prj-1',
-      project_title: newTaskProject,
-      title: newTaskTitle,
-      assignee: newTaskAssignee,
-      assignee_role: 'Associate Staff',
-      due_date: newTaskDeadline,
+      project_id: matchedProject?.id || 'prj-1',
+      project_title: newTaskProject || matchedProject?.title || 'Odias Cloud ERP Enterprise 2.0',
+      title: newTaskTitle.trim(),
+      assignee: effectiveAssignee,
+      assignee_role: effectiveRole,
+      due_date: newTaskDeadline || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
       priority: newTaskPriority,
       progress: 0,
       status: 'assigned',
       remarks: [
         {
           id: `tr-${Date.now()}`,
-          author_name: user?.full_name || 'Rahul Verma',
-          author_role: user?.role_name || 'Team Lead',
+          author_name: user?.full_name || 'Team Lead',
+          author_role: user?.role_name || 'Lead Manager',
           timestamp: new Date().toLocaleString(),
           progress_at_moment: 0,
-          text: `Task created and assigned to ${newTaskAssignee}.`,
+          text: `Task created and assigned to ${effectiveAssignee}.`,
         },
       ],
     };
-    setTasks([t, ...tasks]);
+
+    setTasks((prev) => {
+      const updated = [t, ...prev];
+      try {
+        localStorage.setItem('odias_tasks_master_v4', JSON.stringify(updated));
+      } catch (err) {}
+      return updated;
+    });
+
+    if (matchedProject) {
+      setProjects((prev) => {
+        const updated = prev.map((p) =>
+          p.id === matchedProject.id
+            ? {
+                ...p,
+                checklists: [
+                  ...p.checklists,
+                  { id: `chk-${Date.now()}`, text: `[${t.task_code}] ${t.title} (${t.assignee})`, done: false }
+                ]
+              }
+            : p
+        );
+        try {
+          localStorage.setItem('odias_projects_master_v4', JSON.stringify(updated));
+        } catch (err) {}
+        return updated;
+      });
+    }
+
     setTaskModalOpen(false);
     setNewTaskTitle('');
 
@@ -1034,17 +1377,17 @@ export const ProjectsPage: React.FC = () => {
       t.priority === 'urgent' ? 'alert' : 'info',
       t.assignee,
       undefined,
-      '/app/workspace/tasks'
+      '/app/projects/tasks'
     );
     api.createNotification({
       title: '📋 New Sprint Task Assigned',
       message: `You have been assigned task "${t.title}" in ${t.project_title}. Priority: ${t.priority.toUpperCase()}`,
       notification_type: t.priority === 'urgent' ? 'action_required' : 'info',
-      link: '/app/workspace/tasks',
+      link: '/app/projects/tasks',
       target_name: t.assignee
     }).catch(() => {});
 
-    showToast(`Task "${t.title}" assigned to ${t.assignee}!`);
+    showToast(`🎉 Task "${t.title}" successfully assigned to ${t.assignee}!`);
   };
 
   // Advance Task
@@ -1169,15 +1512,23 @@ export const ProjectsPage: React.FC = () => {
     },
     {
       key: 'assigned_info',
-      header: 'Assigned By / To',
+      header: 'Assigned By / To (Tier 1 & 2)',
       render: (p) => (
-        <div className="space-y-0.5 text-xs">
+        <div className="space-y-1 text-xs">
           <div className="text-[11px] text-purple-700 font-semibold flex items-center">
             <Shield className="w-3 h-3 mr-1" /> HR: {p.assigned_by_hr || 'Ananya Sharma'}
           </div>
           <div className="font-bold text-slate-800 flex items-center">
             <UserCheck className="w-3.5 h-3.5 mr-1 text-emerald-600" /> {p.assigned_to}
           </div>
+          <div className="text-[10px] text-slate-500 font-mono">
+            Last Date: <strong className="text-slate-700">{p.last_date || p.deadline}</strong>
+          </div>
+          {p.delegated_employees && p.delegated_employees.length > 0 && (
+            <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-bold text-[10px]">
+              👥 {p.delegated_employees.length} Staff Delegated
+            </div>
+          )}
         </div>
       ),
     },
@@ -1186,35 +1537,69 @@ export const ProjectsPage: React.FC = () => {
       header: 'Acceptance Flow',
       align: 'center',
       render: (p) => {
+        const uFull = (user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`).trim().toLowerCase();
+        const uEmail = (user?.email || '').toLowerCase();
+        const pAssignee = (p.assigned_to || '').trim().toLowerCase();
+
+        // Exact assignee match
+        const isAssignedToCurrent = Boolean(
+          (uFull && (pAssignee.includes(uFull) || uFull.includes(pAssignee))) ||
+          (uEmail && (pAssignee.includes(uEmail) || uEmail.includes(pAssignee)))
+        );
+
         if (p.assignment_status === 'pending_acceptance') {
+          if (isAssignedToCurrent) {
+            return (
+              <div className="space-y-1">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                  <Clock className="w-3 h-3 mr-1" /> Action Required
+                </span>
+                <button
+                  onClick={() => handleAcceptAssignment(p.id)}
+                  className="w-full px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] shadow-xs flex items-center justify-center space-x-1 cursor-pointer transition-all active:scale-95"
+                >
+                  <Check className="w-3 h-3" />
+                  <span>Accept Project</span>
+                </button>
+              </div>
+            );
+          }
           return (
-            <div className="space-y-1">
+            <div className="space-y-0.5 text-center">
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                 <Clock className="w-3 h-3 mr-1" /> Pending Acceptance
               </span>
-              <button
-                onClick={() => handleAcceptAssignment(p.id)}
-                className="w-full px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] shadow-xs flex items-center justify-center space-x-1 cursor-pointer transition-all"
-              >
-                <Check className="w-3 h-3" />
-                <span>Accept Project</span>
-              </button>
+              <span className="text-[10px] text-slate-400 block font-mono">
+                Assigned: {p.assigned_to}
+              </span>
             </div>
           );
         }
         if (p.assignment_status === 'accepted' && p.status === 'assigned') {
+          if (isAssignedToCurrent) {
+            return (
+              <div className="space-y-1">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  <CheckCircle2 className="w-3 h-3 mr-1" /> Accepted
+                </span>
+                <button
+                  onClick={() => handleStartWork(p.id)}
+                  className="w-full px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] shadow-xs flex items-center justify-center space-x-1 cursor-pointer transition-all active:scale-95"
+                >
+                  <Play className="w-3 h-3" />
+                  <span>Start Work</span>
+                </button>
+              </div>
+            );
+          }
           return (
-            <div className="space-y-1">
+            <div className="space-y-0.5 text-center">
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                 <CheckCircle2 className="w-3 h-3 mr-1" /> Accepted
               </span>
-              <button
-                onClick={() => handleStartWork(p.id)}
-                className="w-full px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] shadow-xs flex items-center justify-center space-x-1 cursor-pointer transition-all"
-              >
-                <Play className="w-3 h-3" />
-                <span>Start Work</span>
-              </button>
+              <span className="text-[10px] text-slate-400 block font-mono">
+                Assigned: {p.assigned_to}
+              </span>
             </div>
           );
         }
@@ -1277,6 +1662,21 @@ export const ProjectsPage: React.FC = () => {
       align: 'right',
       render: (p) => (
         <div className="flex items-center justify-end space-x-1.5">
+          {canPerformAction(user, 'projects', 'edit') && (
+            <button
+              onClick={() => {
+                setDelegateModalProject(p);
+                if (activeEmployees.length > 0) {
+                  setDelegateEmployee(activeEmployees[0].name);
+                  setDelegateRole(activeEmployees[0].role_name);
+                }
+              }}
+              className="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 transition-colors cursor-pointer"
+              title="Delegate Staff / Assign Deliverable to Employee"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             onClick={() => handleOpenRemarkModal(p)}
             className="p-1.5 rounded-lg text-purple-600 hover:text-purple-800 hover:bg-purple-50 border border-purple-200 transition-colors cursor-pointer"
@@ -1434,13 +1834,31 @@ export const ProjectsPage: React.FC = () => {
                 <span className="text-slate-400 block font-medium">Acceptance Status</span>
                 <div className="mt-1 flex items-center space-x-2">
                   {viewProject.assignment_status === 'pending_acceptance' ? (
-                    <button
-                      onClick={() => handleAcceptAssignment(viewProject.id)}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs flex items-center space-x-1 cursor-pointer"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Accept Assignment Now</span>
-                    </button>
+                    (() => {
+                      const uFull = (user?.full_name || `${user?.first_name || ''} ${user?.last_name || ''}`).trim().toLowerCase();
+                      const uEmail = (user?.email || '').toLowerCase();
+                      const pAssignee = (viewProject.assigned_to || '').trim().toLowerCase();
+                      const isAssigned = Boolean(
+                        (uFull && (pAssignee.includes(uFull) || uFull.includes(pAssignee))) ||
+                        (uEmail && (pAssignee.includes(uEmail) || uEmail.includes(pAssignee)))
+                      );
+                      if (isAssigned) {
+                        return (
+                          <button
+                            onClick={() => handleAcceptAssignment(viewProject.id)}
+                            className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs flex items-center space-x-1 cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Accept Assignment Now</span>
+                          </button>
+                        );
+                      }
+                      return (
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 font-bold text-xs font-mono">
+                          Pending Assignee Acceptance ({viewProject.assigned_to})
+                        </span>
+                      );
+                    })()
                   ) : (
                     <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold font-mono">
                       Accepted on {viewProject.accepted_at || 'Verified'}
@@ -1515,6 +1933,163 @@ export const ProjectsPage: React.FC = () => {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* 4. DETAILED EXECUTION ROADMAP & SPECIFICATIONS VAULT */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Detailed Execution Roadmap */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">Execution Roadmap ("Kya kya hoga kaise karna hai")</h2>
+                  <p className="text-[11px] text-slate-500">Structured phased execution blueprint for the sprint</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200 text-xs font-mono leading-relaxed whitespace-pre-line text-slate-700">
+              {viewProject.execution_plan || (
+                `1. Sprint Kickoff and Requirement Analysis\n2. Architecture & Data Schema Setup\n3. Front-end Component Integration\n4. API & Real-time WebSockets Sync\n5. UAT & Client Delivery Sign-Off`
+              )}
+            </div>
+          </div>
+
+          {/* Attached Specifications & Multi-Document Vault */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                  <Paperclip className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">Attached Documents Vault</h2>
+                  <p className="text-[11px] text-slate-500">Official technical contracts, SRS, and architecture briefs</p>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                {(viewProject.documents?.length || 0) > 0 ? `${viewProject.documents?.length} Files` : '1 Document'}
+              </span>
+            </div>
+
+            <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+              {viewProject.documents && viewProject.documents.length > 0 ? (
+                viewProject.documents.map((doc) => (
+                  <div key={doc.id} className="p-3 bg-slate-50 hover:bg-slate-100/70 rounded-xl border border-slate-200 flex items-center justify-between transition-colors">
+                    <div className="flex items-center space-x-2.5 min-w-0">
+                      <FileText className="w-4 h-4 text-blue-600 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="font-bold text-slate-800 block text-xs truncate">{doc.name || doc.file_name}</span>
+                        <div className="flex items-center space-x-2 text-[10px] text-slate-500 font-mono">
+                          <span className="text-blue-600 font-bold">{doc.doc_type}</span>
+                          <span>•</span>
+                          <span>Uploaded {doc.uploaded_at}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => showToast(`📥 Downloading document: ${doc.name || doc.file_name}`)}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-blue-50 hover:border-blue-300 text-blue-600 text-[10px] font-bold shadow-2xs cursor-pointer flex items-center space-x-1 shrink-0"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Download</span>
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                  <div className="flex items-center space-x-2.5">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    <div>
+                      <span className="font-bold text-slate-800 block text-xs">{viewProject.title} - Technical Architecture.pdf</span>
+                      <span className="text-[10px] text-slate-500 font-mono">Technical Specification • Uploaded {viewProject.start_date}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => showToast(`📥 Downloading: ${viewProject.title} Technical Architecture.pdf`)}
+                    className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-blue-600 text-[10px] font-bold shadow-2xs cursor-pointer flex items-center space-x-1"
+                  >
+                    <Download className="w-3 h-3" />
+                    <span>Download</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 5. TIER 2 DELEGATED STAFF REGISTER (Manager / HR -> Employees) */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">Tier 2 Delegated Staff Register (Staff Allocation)</h2>
+                <p className="text-[11px] text-slate-500">
+                  Sprint deliverables delegated by Lead Manager ({viewProject.lead_manager}) & HR ({viewProject.assigned_to}) to team members
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setDelegateModalProject(viewProject);
+                if (activeEmployees.length > 0) {
+                  setDelegateEmployee(activeEmployees[0].name);
+                  setDelegateRole(activeEmployees[0].role_name);
+                }
+              }}
+              className="inline-flex items-center px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-xs cursor-pointer transition-all self-start sm:self-auto"
+            >
+              <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+              <span>+ Delegate Staff Member</span>
+            </button>
+          </div>
+
+          {viewProject.delegated_employees && viewProject.delegated_employees.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {viewProject.delegated_employees.map((staff) => (
+                <div key={staff.id} className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-2 hover:bg-white hover:shadow-xs transition-all">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 font-black text-xs flex items-center justify-center">
+                        {staff.name.charAt(0)}
+                      </div>
+                      <div>
+                        <span className="font-extrabold text-slate-900 text-xs block leading-tight">{staff.name}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">{staff.role}</span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200">
+                      {staff.status}
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 text-xs">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Deliverable</span>
+                    <span className="font-semibold text-slate-800 text-xs block mt-0.5 leading-snug">{staff.deliverable}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono pt-1">
+                    <span>Deadline: <strong className="text-slate-800">{staff.deadline}</strong></span>
+                    <span>By: {staff.delegated_by}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 text-center bg-slate-50/50 rounded-xl border border-slate-100 space-y-2">
+              <Users className="w-8 h-8 text-slate-300 mx-auto" />
+              <p className="text-xs font-semibold text-slate-600">No team members delegated to this project yet.</p>
+              <p className="text-[11px] text-slate-400">The assigned Manager or HR can click "+ Delegate Staff Member" to assign specific sprint deliverables.</p>
+            </div>
+          )}
         </div>
 
         {/* DIRECT WORK REMARKS & PROGRESS LOG STREAM */}
@@ -1596,35 +2171,165 @@ export const ProjectsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center">
             <FolderKanban className="w-7 h-7 text-blue-600 mr-2.5" />
-            Project & Task Management
+            {activeTab === 'all'
+              ? 'Enterprise Projects Master Register'
+              : activeTab === 'my'
+              ? 'My Projects & Personal Sprints Workspace'
+              : activeTab === 'assignments'
+              ? 'HR Project Assignments & Allocation Directorate'
+              : activeTab === 'tasks'
+              ? 'Sprint Task Board & Work Items'
+              : 'Project & Task Management'}
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Enterprise orchestration: HR assignment, assignee acceptance, live % progress updates, work remarks, and certified completion.
+            {activeTab === 'all'
+              ? 'Comprehensive directory of all organizational projects, milestones, budgets, and real-time lifecycle telemetry.'
+              : activeTab === 'my'
+              ? `Personalized workspace for ${user?.full_name || 'Staff'}: track your assigned projects, accept assignments, and advance tasks.`
+              : activeTab === 'assignments'
+              ? 'HR and Management workspace for allocating projects, monitoring team workloads, and tracking staff acceptance SLAs.'
+              : 'Enterprise orchestration: HR assignment, assignee acceptance, live % progress updates, work remarks, and certified completion.'}
           </p>
         </div>
 
-        <div className="flex items-center space-x-2">
-          {/* HR / Super Admin action to assign project */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Add Project */}
           {canPerformAction(user, 'projects', 'add') && (
             <button
-              onClick={() => setProjectModalOpen(true)}
+              onClick={() => {
+                setNewProjectCode(`PRJ-2026-${String(projects.length + 1).padStart(3, '0')}`);
+                setProjectModalOpen(true);
+              }}
               className="inline-flex items-center px-4 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-500 shadow-sm shadow-blue-500/25 transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4 mr-1.5" />
-              <span>HR Assign Project</span>
+              <FolderPlus className="w-4 h-4 mr-1.5" />
+              <span>+ Add Project</span>
             </button>
           )}
 
+          {/* Add Task */}
           {canPerformAction(user, 'projects', 'add') && (
             <button
               onClick={() => setTaskModalOpen(true)}
               className="inline-flex items-center px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 shadow-sm transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4 mr-1.5" />
-              <span>Assign Task</span>
+              <span>+ Add Task</span>
+            </button>
+          )}
+
+          {/* Delegate Staff Deliverable (Tier 2) */}
+          {canPerformAction(user, 'projects', 'edit') && projects.length > 0 && (
+            <button
+              onClick={() => {
+                setDelegateModalProject(projects[0]);
+                if (activeEmployees.length > 0) {
+                  setDelegateEmployee(activeEmployees[0].name);
+                  setDelegateRole(activeEmployees[0].role_name);
+                }
+              }}
+              className="inline-flex items-center px-4 py-2.5 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-500 shadow-sm shadow-purple-500/25 transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 mr-1.5" />
+              <span>Delegate Staff</span>
             </button>
           )}
         </div>
+      </div>
+
+      {/* Executive Submodule Navigation Tabs */}
+      <div className="flex items-center space-x-2 overflow-x-auto pb-2 border-b border-slate-200">
+        <button
+          onClick={() => handleTabChange('all')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            activeTab === 'all'
+              ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25'
+              : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
+          }`}
+        >
+          <FolderKanban className="w-3.5 h-3.5" />
+          <span>All Projects</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+            activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+          }`}>
+            {projects.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => handleTabChange('my')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            activeTab === 'my'
+              ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25'
+              : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
+          }`}
+        >
+          <User className="w-3.5 h-3.5" />
+          <span>My Projects</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+            activeTab === 'my' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+          }`}>
+            {myProjects.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => handleTabChange('assignments')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            activeTab === 'assignments'
+              ? 'bg-purple-600 text-white shadow-sm shadow-purple-500/25'
+              : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Project Assignments</span>
+          {pendingCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-amber-400 text-slate-950 font-bold">
+              {pendingCount} Pending
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => handleTabChange('tasks')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            activeTab === 'tasks'
+              ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25'
+              : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
+          }`}
+        >
+          <CheckSquare className="w-3.5 h-3.5" />
+          <span>Task Management</span>
+          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+            activeTab === 'tasks' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+          }`}>
+            {tasks.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => handleTabChange('kanban')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            activeTab === 'kanban'
+              ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25'
+              : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
+          }`}
+        >
+          <Briefcase className="w-3.5 h-3.5" />
+          <span>Kanban Board</span>
+        </button>
+
+        <button
+          onClick={() => handleTabChange('dwr')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-2 shrink-0 ${
+            activeTab === 'dwr'
+              ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25'
+              : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>Daily Work Reports</span>
+        </button>
       </div>
 
       {/* ---------------------------------------------------- */}
@@ -1726,40 +2431,43 @@ export const ProjectsPage: React.FC = () => {
       )}
 
       {/* ---------------------------------------------------- */}
-      {/* TAB 2 & 3 & 4: ALL PROJECTS / MY PROJECTS / ASSIGNMENTS */}
+      {/* TAB: ALL PROJECTS (Master Register) */}
       {/* ---------------------------------------------------- */}
-      {(activeTab === 'all' || activeTab === 'my' || activeTab === 'assignments') && (
-        <div className="space-y-4">
-          {/* Active Flow Explainer Banner */}
-          <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-200/80 text-xs text-blue-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center space-x-2.5">
-              <Sparkles className="w-5 h-5 text-blue-600 shrink-0" />
-              <div>
-                <span className="font-extrabold block">
-                  {activeTab === 'assignments'
-                    ? 'HR Project Assignments & Acceptance Workflow'
-                    : activeTab === 'my'
-                    ? 'My Assigned Projects & Sprints'
-                    : 'Enterprise Project Master Register'}
-                </span>
-                <span className="text-slate-600 text-[11px]">
-                  Lifecycle: HR Assigns ➔ Assignee Accepts ➔ Start Work ➔ Update % Progress ➔ Add Remarks ➔ Success Completion Stamp.
-                </span>
-              </div>
+      {activeTab === 'all' && (
+        <div className="space-y-5">
+          {/* Top Quick Telemetry */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">Total Projects</span>
+              <span className="text-xl sm:text-2xl font-black text-slate-900 font-mono mt-0.5 block">{projects.length}</span>
+              <span className="text-[10px] sm:text-[11px] text-blue-600 font-semibold">Enterprise Directory</span>
             </div>
-
-            <button
-              onClick={() => setProjectModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 shadow-xs shrink-0 cursor-pointer"
-            >
-              + Assign New Project
-            </button>
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">Active In-Progress</span>
+              <span className="text-xl sm:text-2xl font-black text-blue-600 font-mono mt-0.5 block">
+                {projects.filter((p) => p.status === 'in_progress').length}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-blue-700 font-semibold">Active Execution</span>
+            </div>
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">Pending Acceptance</span>
+              <span className="text-xl sm:text-2xl font-black text-amber-600 font-mono mt-0.5 block">
+                {projects.filter((p) => p.assignment_status === 'pending_acceptance').length}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-amber-700 font-semibold">Awaiting Staff Sign-off</span>
+            </div>
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">Completed (Success)</span>
+              <span className="text-xl sm:text-2xl font-black text-emerald-600 font-mono mt-0.5 block">
+                {projects.filter((p) => p.status === 'completed' || p.progress >= 100).length}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-emerald-700 font-semibold">Milestones Delivered</span>
+            </div>
           </div>
 
           {/* Realtime Filter Toolbar */}
           <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Live Search */}
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                 <input
@@ -1779,7 +2487,6 @@ export const ProjectsPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Status Filter */}
               <div className="relative">
                 <select
                   value={statusFilter}
@@ -1795,7 +2502,6 @@ export const ProjectsPage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Acceptance Filter */}
               <div className="relative">
                 <select
                   value={assignmentFilter}
@@ -1809,7 +2515,6 @@ export const ProjectsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Filter Summary */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
               <span className="text-slate-500 font-medium">
                 Showing <strong className="text-slate-900">{filteredProjects.length}</strong> of{' '}
@@ -1832,7 +2537,7 @@ export const ProjectsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Universal DataTable */}
+          {/* Master DataTable */}
           <DataTable
             data={filteredProjects}
             columns={projectColumns}
@@ -1840,6 +2545,352 @@ export const ProjectsPage: React.FC = () => {
             initialPageSize={10}
             pageSizeOptions={[10, 25, 50, 100]}
           />
+
+          {/* Embedded Live Sprint Tasks Registry Tray */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                  <CheckSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">Live Sprint Tasks Overview ({tasks.length} Active Tasks)</h3>
+                  <p className="text-[11px] text-slate-500">Instant visibility of tasks allocated to team members across all parent projects.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setTaskModalOpen(true)}
+                className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 shadow-xs cursor-pointer self-start sm:self-auto"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                <span>Assign New Task</span>
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
+                    <th className="py-2.5 px-3">Task #</th>
+                    <th className="py-2.5 px-3">Task Title & Project</th>
+                    <th className="py-2.5 px-3">Assignee</th>
+                    <th className="py-2.5 px-3">Priority</th>
+                    <th className="py-2.5 px-3">Deadline</th>
+                    <th className="py-2.5 px-3">Status</th>
+                    <th className="py-2.5 px-3 text-right">Quick Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {tasks.slice(0, 8).map((t) => (
+                    <tr key={t.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-2.5 px-3 font-mono font-bold text-slate-600">{t.task_code}</td>
+                      <td className="py-2.5 px-3">
+                        <span className="font-bold text-slate-900 block">{t.title}</span>
+                        <span className="text-[11px] text-slate-400">{t.project_title}</span>
+                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-slate-800">{t.assignee}</td>
+                      <td className="py-2.5 px-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          t.priority === 'urgent' ? 'bg-rose-100 text-rose-800' :
+                          t.priority === 'high' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          {t.priority}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-mono text-slate-600">{t.due_date}</td>
+                      <td className="py-2.5 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          t.status === 'done' ? 'bg-emerald-100 text-emerald-800' :
+                          t.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                          t.status === 'review' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          {t.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <button
+                          onClick={() => handleAdvanceTask(t.id)}
+                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[10px] cursor-pointer"
+                        >
+                          {t.status === 'assigned' || t.status === 'todo' ? 'Start ➔' : t.status === 'in_progress' ? 'Review ➔' : t.status === 'review' ? 'Complete ➔' : 'Done ✓'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* TAB: MY PROJECTS (Personal Workspace) */}
+      {/* ---------------------------------------------------- */}
+      {activeTab === 'my' && (
+        <div className="space-y-5">
+          {/* Action Required Banner for Pending Projects */}
+          {myProjects.some(p => p.assignment_status === 'pending_acceptance') && (
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
+              <div className="flex items-center space-x-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                <div>
+                  <span className="font-extrabold text-sm block">Action Required: Project Assignment Awaiting Your Acceptance</span>
+                  <p className="text-xs text-amber-700">
+                    HR has dispatched a new project to your workspace. Review the scope details below and click <strong>"Accept Project"</strong> to initiate your sprint clock.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Personal Telemetry KPIs */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">My Assigned Projects</span>
+              <span className="text-xl sm:text-2xl font-black text-slate-900 font-mono mt-0.5 block">{myProjects.length}</span>
+              <span className="text-[10px] sm:text-[11px] text-blue-600 font-semibold">Active Portfolios</span>
+            </div>
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">Awaiting My Acceptance</span>
+              <span className="text-xl sm:text-2xl font-black text-amber-600 font-mono mt-0.5 block">
+                {myProjects.filter(p => p.assignment_status === 'pending_acceptance').length}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-amber-700 font-semibold">Action Pending</span>
+            </div>
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">My Active Sprint Tasks</span>
+              <span className="text-xl sm:text-2xl font-black text-indigo-600 font-mono mt-0.5 block">
+                {myTasks.filter(t => t.status !== 'done').length}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-indigo-700 font-semibold">In Pipeline</span>
+            </div>
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">My Completed Work</span>
+              <span className="text-xl sm:text-2xl font-black text-emerald-600 font-mono mt-0.5 block">
+                {myProjects.filter(p => p.status === 'completed' || p.progress >= 100).length}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-emerald-700 font-semibold">Successfully Shipped</span>
+            </div>
+          </div>
+
+          {/* User's Projects Table */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900">Projects Assigned to Me</h3>
+                <p className="text-[11px] text-slate-500">Accept assignments, advance milestones, and submit daily work reports.</p>
+              </div>
+              <button
+                onClick={() => setDwrModalOpen(true)}
+                className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-500 shadow-xs cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                <span>Submit DWR Report</span>
+              </button>
+            </div>
+
+            {myProjects.length > 0 ? (
+              <DataTable
+                data={myProjects}
+                columns={projectColumns}
+                searchPlaceholder="Search within my projects..."
+                initialPageSize={10}
+              />
+            ) : (
+              <div className="py-12 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-3">
+                <FolderKanban className="w-10 h-10 text-slate-400 mx-auto" />
+                <div>
+                  <h4 className="font-extrabold text-slate-700 text-sm">No Projects Assigned To You Yet</h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                    When HR or management assigns a project or sprint to your profile, it will immediately appear here.
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleTabChange('all')}
+                  className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-500 cursor-pointer shadow-xs"
+                >
+                  Browse Enterprise Projects Master
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* User's Assigned Tasks Board */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900">My Individual Sprint Tasks ({myTasks.length})</h3>
+                <p className="text-[11px] text-slate-500">Execute your sprint items and update your progress status in real-time.</p>
+              </div>
+              <button
+                onClick={() => setTaskModalOpen(true)}
+                className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 cursor-pointer shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                <span>New Subtask</span>
+              </button>
+            </div>
+
+            {myTasks.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {myTasks.map((t) => (
+                  <div key={t.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3 hover:border-blue-300 transition-all">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-[10px] font-mono font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        {t.task_code}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        t.status === 'done' ? 'bg-emerald-100 text-emerald-800' :
+                        t.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                        t.status === 'review' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {t.status.toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="font-extrabold text-slate-900 text-xs line-clamp-2">{t.title}</h4>
+                      <span className="text-[11px] text-slate-400 block mt-0.5 font-medium">{t.project_title}</span>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                      <span className="text-[11px] text-slate-500 font-mono">Due: {t.due_date}</span>
+                      <button
+                        onClick={() => handleAdvanceTask(t.id)}
+                        className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] cursor-pointer shadow-xs"
+                      >
+                        {t.status === 'assigned' || t.status === 'todo' ? 'Start Task ➔' : t.status === 'in_progress' ? 'Submit Review ➔' : t.status === 'review' ? 'Mark Done ✓' : 'Done ✓'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 py-4 text-center">No individual tasks assigned yet.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* TAB: PROJECT ASSIGNMENTS (Directorate Allocation Matrix) */}
+      {/* ---------------------------------------------------- */}
+      {activeTab === 'assignments' && (
+        <div className="space-y-5">
+          {/* Directorate Telemetry KPIs */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">Total Allocations</span>
+              <span className="text-xl sm:text-2xl font-black text-purple-600 font-mono mt-0.5 block">{projects.length}</span>
+              <span className="text-[10px] sm:text-[11px] text-purple-700 font-semibold">Enterprise Scope</span>
+            </div>
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">Pending Staff Acceptance</span>
+              <span className="text-xl sm:text-2xl font-black text-amber-600 font-mono mt-0.5 block">
+                {projects.filter(p => p.assignment_status === 'pending_acceptance').length}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-amber-700 font-semibold">Awaiting Acceptance</span>
+            </div>
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">Accepted & Executing</span>
+              <span className="text-xl sm:text-2xl font-black text-blue-600 font-mono mt-0.5 block">
+                {projects.filter(p => p.assignment_status === 'accepted').length}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-blue-700 font-semibold">Active In Sprints</span>
+            </div>
+            <div className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+              <span className="text-slate-500 text-[11px] sm:text-xs font-semibold block">Active Assignees</span>
+              <span className="text-xl sm:text-2xl font-black text-emerald-600 font-mono mt-0.5 block">
+                {activeEmployees.length || 5}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-emerald-700 font-semibold">Qualified Staff</span>
+            </div>
+          </div>
+
+          {/* Squad & Team Member Allocation Matrix */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900">Squad Allocation Matrix & Capacity</h3>
+                <p className="text-[11px] text-slate-500">Monitor workload distribution and dispatch projects directly to team members.</p>
+              </div>
+              <button
+                onClick={() => setProjectModalOpen(true)}
+                className="inline-flex items-center px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-xs cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                <span>+ Assign New Project</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+              {(activeEmployees.length > 0 ? activeEmployees : [
+                { id: '1', name: 'Priya Sharma', role_name: 'HR Manager' },
+                { id: '2', name: 'Rajesh Verma', role_name: 'Engineering Manager' },
+                { id: '3', name: 'Amit Patel', role_name: 'Associate Software Engineer' },
+                { id: '4', name: 'Sneha Mohanty', role_name: 'Sales Director' },
+                { id: '5', name: 'Sunil Sahoo', role_name: 'Accounts Executive' }
+              ]).map((emp) => {
+                const assignedProjCount = projects.filter(p => (p.assigned_to || '').toLowerCase().includes(emp.name.toLowerCase())).length;
+                const pendingCount = projects.filter(p => (p.assigned_to || '').toLowerCase().includes(emp.name.toLowerCase()) && p.assignment_status === 'pending_acceptance').length;
+                return (
+                  <div key={emp.id} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between space-y-3 hover:border-purple-300 transition-all">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-7 h-7 rounded-full bg-purple-700 text-white flex items-center justify-center font-bold text-[11px] shrink-0">
+                          {emp.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="font-bold text-slate-900 text-xs block truncate">{emp.name}</span>
+                          <span className="text-[10px] text-slate-500 block truncate">{emp.role_name}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500">Allocated:</span>
+                        <span className="font-bold font-mono text-purple-700">{assignedProjCount} Projects</span>
+                      </div>
+                      {pendingCount > 0 && (
+                        <div className="flex items-center justify-between text-[10px] text-amber-700 font-semibold mt-1">
+                          <span>Pending Sign-off:</span>
+                          <span className="font-mono bg-amber-100 px-1 rounded">{pendingCount}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setNewAssignee(emp.name);
+                        setNewAssigneeRole(emp.role_name);
+                        setProjectModalOpen(true);
+                      }}
+                      className="w-full py-1.5 rounded-lg bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 font-bold text-[10px] cursor-pointer transition-colors text-center"
+                    >
+                      + Assign Project
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Assignments & Acceptance Audit Register Table */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900">Project Assignments & Acceptance Tracking</h3>
+                <p className="text-[11px] text-slate-500">Audit trail of who assigned each project, designated assignee, and acceptance verification timestamp.</p>
+              </div>
+            </div>
+
+            <DataTable
+              data={projects}
+              columns={projectColumns}
+              searchPlaceholder="Filter project assignments..."
+              initialPageSize={10}
+            />
+          </div>
         </div>
       )}
 
@@ -2364,37 +3415,52 @@ export const ProjectsPage: React.FC = () => {
       )}
 
       {/* ---------------------------------------------------- */}
-      {/* MODAL 1: HR ASSIGN NEW PROJECT */}
+      {/* MODAL 1: CREATE & ASSIGN NEW PROJECT (TIER 1) */}
       {/* ---------------------------------------------------- */}
       <Modal
         isOpen={projectModalOpen}
         onClose={() => setProjectModalOpen(false)}
-        title="HR Directorate: Assign New Project"
+        title="+ Create & Assign Project (Tier 1 Executive Allocation)"
         size="lg"
       >
-        <form onSubmit={handleCreateProject} className="space-y-4 text-xs">
-          <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 text-purple-900">
-            <span className="font-bold block">HR Project Assignment Rule:</span>
-            <span className="text-[11px] text-purple-700">
-              When HR assigns a project, it starts in <strong>Pending Acceptance</strong> state. The assigned manager/employee accepts the project and begins execution.
+        <form onSubmit={handleCreateProject} className="space-y-4 text-xs max-h-[80vh] overflow-y-auto pr-1">
+          <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-200 text-blue-900">
+            <span className="font-bold block flex items-center">
+              <Shield className="w-3.5 h-3.5 mr-1 text-blue-600" /> Executive Project Lifecycle:
+            </span>
+            <span className="text-[11px] text-blue-700">
+              Create an enterprise project with execution roadmap & attached documents, then assign to an HR Leader or Team Manager (Tier 1), who can delegate specific tasks to team members (Tier 2).
             </span>
           </div>
 
-          <div>
-            <label className="block text-slate-700 font-bold mb-1">Project Title *</label>
-            <input
-              type="text"
-              required
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="e.g. NextGen Microservices Migration"
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-medium"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
+              <label className="block text-slate-700 font-bold mb-1">Project Full Name / Title *</label>
+              <input
+                type="text"
+                required
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="e.g. NextGen Autonomous ERP Core 2.0"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Project Code *</label>
+              <input
+                type="text"
+                value={newProjectCode}
+                onChange={(e) => setNewProjectCode(e.target.value)}
+                placeholder={`PRJ-2026-${String(projects.length + 1).padStart(3, '0')}`}
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-mono font-bold"
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-slate-700 font-bold mb-1">Client Name *</label>
+              <label className="block text-slate-700 font-bold mb-1">Client / Sponsor *</label>
               <input
                 type="text"
                 required
@@ -2402,6 +3468,58 @@ export const ProjectsPage: React.FC = () => {
                 onChange={(e) => setNewClient(e.target.value)}
                 placeholder="e.g. Tata Advanced Systems"
                 className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Project Category</label>
+              <select
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-semibold"
+              >
+                <option value="Software Engineering & Cloud">Software Engineering & Cloud</option>
+                <option value="Enterprise ERP & Infrastructure">Enterprise ERP & Infrastructure</option>
+                <option value="Finance & GST Compliance">Finance & GST Compliance</option>
+                <option value="HRMS & Workforce Automations">HRMS & Workforce Automations</option>
+                <option value="Sales & CRM Growth">Sales & CRM Growth</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Priority</label>
+              <select
+                value={newPriority}
+                onChange={(e) => setNewPriority(e.target.value as any)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-semibold"
+              >
+                <option value="urgent">🔴 Urgent</option>
+                <option value="high">🟠 High</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="low">🟢 Low</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Start Date</label>
+              <input
+                type="date"
+                value={newStartDate}
+                onChange={(e) => setNewStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Last Date / Deadline *</label>
+              <input
+                type="date"
+                required
+                value={newDeadline}
+                onChange={(e) => setNewDeadline(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-mono font-bold text-blue-700"
               />
             </div>
 
@@ -2417,70 +3535,143 @@ export const ProjectsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-700 font-bold mb-1">Supervising Lead Manager *</label>
-              <select
-                value={newLeadManager}
-                onChange={(e) => setNewLeadManager(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-semibold"
-              >
-                <option value="Rahul Verma">Rahul Verma (Team Manager)</option>
-                <option value="Sarah Jenkins">Sarah Jenkins (Super Admin)</option>
-                <option value="Vikas Roy">Vikas Roy (Operations Lead)</option>
-              </select>
-            </div>
+          {/* Tier 1 Executive Assignee (Manager or HR Lead) */}
+          <div className="p-3 bg-purple-50/70 rounded-xl border border-purple-200/80 space-y-3">
+            <span className="font-bold text-purple-900 flex items-center text-xs">
+              <UserCheck className="w-3.5 h-3.5 mr-1 text-purple-600" /> Tier 1 Executive Assignment (Manager / HR Directorate):
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-purple-900 font-bold mb-1">Supervising Lead Manager *</label>
+                <select
+                  value={newLeadManager}
+                  onChange={(e) => setNewLeadManager(e.target.value)}
+                  className="w-full px-3 py-2 border border-purple-300 rounded-xl bg-white font-semibold"
+                >
+                  <option value="Rajesh Verma">Rajesh Verma (Team Manager)</option>
+                  <option value="Priya Sharma">Priya Sharma (HR Director)</option>
+                  <option value="Sarah Jenkins">Sarah Jenkins (Super Admin)</option>
+                  <option value="Vikas Roy">Vikas Roy (Operations Lead)</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-slate-700 font-bold mb-1">Designated Assignee (Employee) *</label>
-              <select
-                value={newAssignee}
-                onChange={(e) => {
-                  setNewAssignee(e.target.value);
-                  const matched = activeEmployees.find(emp => emp.name === e.target.value);
-                  if (matched) setNewAssigneeRole(matched.role_name);
-                  else setNewAssigneeRole(e.target.value === 'Vikram Malhotra' ? 'Finance Controller' : 'Associate Staff');
-                }}
-                className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-semibold"
-              >
-                {activeEmployees.length > 0 ? (
-                  activeEmployees.map((emp) => (
-                    <option key={emp.id} value={emp.name}>
-                      {emp.name} ({emp.role_name})
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value="Rohan Mehta">Rohan Mehta (Associate Staff)</option>
-                    <option value="Rakesh Mohanty">Rakesh Mohanty (Associate Staff)</option>
-                    <option value="Vikram Malhotra">Vikram Malhotra (Finance Controller)</option>
-                    <option value="Rahul Verma">Rahul Verma (Manager / Lead)</option>
-                  </>
-                )}
-              </select>
+              <div>
+                <label className="block text-purple-900 font-bold mb-1">Executive Assignee (Manager / HR) *</label>
+                <select
+                  value={newAssignee}
+                  onChange={(e) => {
+                    setNewAssignee(e.target.value);
+                    const matched = activeEmployees.find(emp => emp.name === e.target.value);
+                    if (matched) setNewAssigneeRole(matched.role_name);
+                    else setNewAssigneeRole(e.target.value.toLowerCase().includes('manager') ? 'Team Manager' : 'Associate Staff');
+                  }}
+                  className="w-full px-3 py-2 border border-purple-300 rounded-xl bg-white font-semibold"
+                >
+                  {activeEmployees.length > 0 ? (
+                    activeEmployees.map((emp) => (
+                      <option key={emp.id} value={emp.name}>
+                        {emp.name} ({emp.role_name})
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Rajesh Verma">Rajesh Verma (Team Manager)</option>
+                      <option value="Priya Sharma">Priya Sharma (HR Director)</option>
+                      <option value="Amit Patel">Amit Patel (Associate Software Engineer)</option>
+                      <option value="Sunil Sahoo">Sunil Sahoo (Accounts & Finance Lead)</option>
+                    </>
+                  )}
+                </select>
+              </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-slate-700 font-bold mb-1">Committed Delivery Deadline *</label>
-            <input
-              type="date"
-              required
-              value={newDeadline}
-              onChange={(e) => setNewDeadline(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-700 font-bold mb-1">Sprint Scope & Objective</label>
+            <label className="block text-slate-700 font-bold mb-1">Project Scope & Objectives</label>
             <textarea
-              rows={3}
+              rows={2}
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Outline specific objectives and key deliverables for the assignee..."
+              placeholder="Outline high-level objectives, deliverable milestones, and success criteria..."
               className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-medium"
             />
+          </div>
+
+          <div>
+            <label className="block text-slate-700 font-bold mb-1">Detailed Execution Roadmap ("Kya kya hoga kaise karna hai")</label>
+            <textarea
+              rows={3}
+              value={newExecutionPlan}
+              onChange={(e) => setNewExecutionPlan(e.target.value)}
+              placeholder="1. Sprint Kickoff and Requirement Analysis&#10;2. Architecture & Data Schema Setup&#10;3. Front-end Component Integration&#10;4. API & Real-time WebSockets Sync&#10;5. UAT & Client Delivery Sign-Off"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-medium"
+            />
+          </div>
+
+          {/* MULTI-DOCUMENT ATTACHMENTS WITH + ICON */}
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-1.5">
+                <Paperclip className="w-4 h-4 text-blue-600" />
+                <span className="font-bold text-slate-900 text-xs">Project Documents & Specifications Vault</span>
+                <span className="text-[10px] text-slate-500 font-mono">({newDocuments.length} Attached)</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddDocumentItem}
+                className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] shadow-xs cursor-pointer transition-all"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                <span>+ Add Document</span>
+              </button>
+            </div>
+
+            {newDocuments.length === 0 ? (
+              <p className="text-[11px] text-slate-500 italic py-1">
+                No custom documents attached yet. Click "+ Add Document" above to attach SRS blueprints, contracts, or architectural designs.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {newDocuments.map((doc, idx) => (
+                  <div key={doc.id} className="p-2.5 bg-white rounded-xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-2xs">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+                      <input
+                        type="text"
+                        placeholder="Document Name / Title (e.g. Architecture SRS)"
+                        value={doc.name}
+                        onChange={(e) => handleUpdateDocumentItem(doc.id, 'name', e.target.value)}
+                        className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-medium w-full"
+                      />
+                      <select
+                        value={doc.doc_type}
+                        onChange={(e) => handleUpdateDocumentItem(doc.id, 'doc_type', e.target.value)}
+                        className="px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold w-full bg-slate-50"
+                      >
+                        <option value="Technical Specification">Technical Specification</option>
+                        <option value="Contract / Agreement">Contract / Agreement</option>
+                        <option value="Architecture Design">Architecture Design</option>
+                        <option value="SRS / Requirements">SRS / Requirements</option>
+                        <option value="UAT Deliverable">UAT Deliverable</option>
+                        <option value="Compliance Certificate">Compliance Certificate</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center space-x-2 shrink-0 self-end sm:self-center">
+                      <span className="text-[10px] text-emerald-600 font-mono font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        ✓ Attached ({doc.uploaded_at})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDocumentItem(doc.id)}
+                        className="p-1 rounded-md text-rose-500 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
+                        title="Remove Document"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200">
@@ -2495,7 +3686,7 @@ export const ProjectsPage: React.FC = () => {
               type="submit"
               className="px-5 py-2 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 shadow-sm shadow-blue-500/25 cursor-pointer"
             >
-              Dispatch Assignment
+              + Create & Assign Project
             </button>
           </div>
         </form>
@@ -2838,6 +4029,152 @@ export const ProjectsPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* ---------------------------------------------------- */}
+      {/* MODAL 6: MULTI-TIER DELEGATION (MANAGER / HR -> EMPLOYEES) */}
+      {/* ---------------------------------------------------- */}
+      {delegateModalProject && (
+        <Modal
+          isOpen={!!delegateModalProject}
+          onClose={() => setDelegateModalProject(null)}
+          title={`Delegate Sprint Deliverable to Staff (${delegateModalProject.project_code})`}
+          size="lg"
+        >
+          <form onSubmit={handleDelegateToEmployee} className="space-y-4 text-xs max-h-[80vh] overflow-y-auto pr-1">
+            <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 text-purple-900 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold text-slate-900">{delegateModalProject.title}</span>
+                <span className="font-mono text-xs font-bold text-purple-700 bg-white px-2 py-0.5 rounded border border-purple-200">
+                  {delegateModalProject.project_code}
+                </span>
+              </div>
+              <div className="text-[11px] text-purple-700 flex flex-wrap gap-2">
+                <span>Manager Lead: <strong>{delegateModalProject.lead_manager}</strong></span>
+                <span>•</span>
+                <span>Assigned HR: <strong>{delegateModalProject.assigned_to}</strong></span>
+                <span>•</span>
+                <span>Project Last Date: <strong>{delegateModalProject.last_date || delegateModalProject.deadline}</strong></span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Target Project</label>
+                <select
+                  value={delegateModalProject.id}
+                  onChange={(e) => {
+                    const found = projects.find(p => p.id === e.target.value);
+                    if (found) setDelegateModalProject(found);
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-semibold"
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.title} ({p.project_code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Designated Staff Member (Employee) *</label>
+                <select
+                  value={delegateEmployee}
+                  onChange={(e) => {
+                    setDelegateEmployee(e.target.value);
+                    const matched = activeEmployees.find(emp => emp.name === e.target.value);
+                    if (matched) setDelegateRole(matched.role_name);
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-semibold text-purple-900"
+                >
+                  {activeEmployees.length > 0 ? (
+                    activeEmployees.map((emp) => (
+                      <option key={emp.id} value={emp.name}>
+                        {emp.name} ({emp.role_name})
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Amit Patel">Amit Patel (Associate Software Engineer)</option>
+                      <option value="Pooja Das">Pooja Das (Senior Frontend Developer)</option>
+                      <option value="Sunil Sahoo">Sunil Sahoo (Accounts & Finance Lead)</option>
+                      <option value="Manas Kumar Rout">Manas Kumar Rout (Operations Associate)</option>
+                      <option value="Sneha Mohanty">Sneha Mohanty (Sales Director)</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Deliverable / Sprint Task Title *</label>
+              <input
+                type="text"
+                required
+                value={delegateDeliverable}
+                onChange={(e) => setDelegateDeliverable(e.target.value)}
+                placeholder="e.g. Implement WebRTC Face Verification & Liveness API Integration"
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-700 font-bold mb-1">Detailed Work Instructions ("Kaise karna hai - Step-by-Step Instructions")</label>
+              <textarea
+                rows={3}
+                value={delegateInstructions}
+                onChange={(e) => setDelegateInstructions(e.target.value)}
+                placeholder="Detail technical expectations, required components, API contracts, branch guidelines, and verification criteria for the employee..."
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-medium"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Employee Deliverable Deadline / Last Date *</label>
+                <input
+                  type="date"
+                  required
+                  value={delegateDeadline}
+                  onChange={(e) => setDelegateDeadline(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-mono font-bold text-purple-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold mb-1">Sprint Priority</label>
+                <select
+                  value={delegatePriority}
+                  onChange={(e) => setDelegatePriority(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-semibold"
+                >
+                  <option value="urgent">🔴 Urgent</option>
+                  <option value="high">🟠 High</option>
+                  <option value="medium">🟡 Medium</option>
+                  <option value="low">🟢 Low</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-3 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setDelegateModalProject(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-500 shadow-sm shadow-purple-500/25 cursor-pointer flex items-center space-x-1.5"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Delegate to Employee</span>
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };

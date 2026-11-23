@@ -62,13 +62,13 @@ export const RecruitmentPage: React.FC = () => {
     setLoading(true);
     try {
       const [jobsRes, appsRes, deptsRes] = await Promise.all([
-        api.getJobPostings(),
-        api.getJobApplications(),
-        api.getDepartments(),
+        api.getJobPostings().catch(() => ({ results: [] })),
+        api.getJobApplications().catch(() => ({ results: [] })),
+        api.getDepartments().catch(() => ({ results: [] })),
       ]);
-      setPostings(jobsRes?.data?.results || jobsRes?.data || []);
-      setApplications(appsRes?.data?.results || appsRes?.data || []);
-      setDepartments(deptsRes?.data?.results || deptsRes?.data || []);
+      setPostings(jobsRes?.results || (Array.isArray(jobsRes) ? jobsRes : jobsRes?.data?.results || jobsRes?.data || []));
+      setApplications(appsRes?.results || (Array.isArray(appsRes) ? appsRes : appsRes?.data?.results || appsRes?.data || []));
+      setDepartments(deptsRes?.results || (Array.isArray(deptsRes) ? deptsRes : deptsRes?.data?.results || deptsRes?.data || []));
     } catch (err) {
       console.error('Failed to load recruitment data', err);
     } finally {
@@ -78,10 +78,12 @@ export const RecruitmentPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const unsub = subscribe('recruitment_*', () => {
-      loadData();
-    });
-    return () => unsub();
+    const unsub1 = subscribe('recruitment_*', () => loadData());
+    const unsub2 = subscribe('department:*', () => loadData());
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   const handleCreateJob = async (e: React.FormEvent) => {
@@ -216,48 +218,48 @@ export const RecruitmentPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Open Positions</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{openPositionsTotal} Roles</p>
-            <p className="text-xs text-primary-600 mt-1">{postings.length} Active requisitions</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Open Positions</p>
+            <p className="text-base sm:text-2xl font-bold text-gray-900 mt-1 truncate">{openPositionsTotal} Roles</p>
+            <p className="text-[11px] sm:text-xs text-primary-600 mt-0.5 sm:mt-1 truncate">{postings.length} Active requisitions</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <Briefcase size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <Briefcase className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Talent Pool</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{totalCandidates}</p>
-            <p className="text-xs text-blue-600 mt-1">Across all pipeline stages</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Active Talent Pool</p>
+            <p className="text-base sm:text-2xl font-bold text-gray-900 mt-1 truncate">{totalCandidates}</p>
+            <p className="text-[11px] sm:text-xs text-blue-600 mt-0.5 sm:mt-1 truncate">Across all pipeline stages</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-            <Users size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
+            <Users className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">In Interviews</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">{interviewingCount}</p>
-            <p className="text-xs text-amber-600 mt-1">Under evaluation</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">In Interviews</p>
+            <p className="text-base sm:text-2xl font-bold text-amber-600 mt-1 truncate">{interviewingCount}</p>
+            <p className="text-[11px] sm:text-xs text-amber-600 mt-0.5 sm:mt-1 truncate">Under evaluation</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <Star size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+            <Star className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Offers & Hired</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{hiredCount}</p>
-            <p className="text-xs text-emerald-600 mt-1">Successful closures</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Offers & Hired</p>
+            <p className="text-base sm:text-2xl font-bold text-emerald-600 mt-1 truncate">{hiredCount}</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 truncate">Successful closures</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <UserCheck size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <UserCheck className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>

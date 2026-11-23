@@ -38,10 +38,12 @@ export const LeavesPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const unsub = subscribe('leave_*', () => {
-      loadData();
-    });
-    return () => unsub();
+    const unsub1 = subscribe('leave_*', () => loadData());
+    const unsub2 = subscribe('employee_*', () => loadData());
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, [user]);
 
   const loadData = async () => {

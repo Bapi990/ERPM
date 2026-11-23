@@ -635,52 +635,52 @@ Aditya Heavy Engineering,Vikram Aditya,vikram.aditya@aditya-eng.com,+91 99887 76
       </div>
 
       {/* Top Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Channels</span>
-            <span className="px-2 py-0.5 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Active Channels</span>
+            <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
               Live
             </span>
           </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-slate-900">{activeCount}</span>
-            <span className="text-xs text-slate-500 font-semibold">of {channels.length} configured</span>
+          <div className="mt-2 sm:mt-3 flex flex-col sm:flex-row sm:items-baseline sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-slate-900">{activeCount}</span>
+            <span className="text-[10px] sm:text-xs text-slate-500 font-semibold truncate">of {channels.length} configured</span>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Leads Ingested</span>
+            <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Total Leads Ingested</span>
             <Zap className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-blue-600 font-mono">{totalCaptured}</span>
-            <span className="text-xs text-emerald-600 font-bold">100% Realtime</span>
+          <div className="mt-2 sm:mt-3 flex flex-col sm:flex-row sm:items-baseline sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-blue-600 font-mono">{totalCaptured}</span>
+            <span className="text-[10px] sm:text-xs text-emerald-600 font-bold truncate">100% Realtime</span>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ingestion Logs</span>
+            <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Ingestion Logs</span>
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-slate-900 font-mono">{logs.length}</span>
-            <span className="text-xs text-slate-500 font-semibold">Audit Events</span>
+          <div className="mt-2 sm:mt-3 flex flex-col sm:flex-row sm:items-baseline sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-slate-900 font-mono">{logs.length}</span>
+            <span className="text-[10px] sm:text-xs text-slate-500 font-semibold truncate">Audit Events</span>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Public Webhook</span>
+            <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Public Webhook</span>
             <Globe className="w-4 h-4 text-indigo-500" />
           </div>
-          <div className="mt-3">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-indigo-50 text-indigo-700 font-bold">
+          <div className="mt-2 sm:mt-3">
+            <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-mono bg-indigo-50 text-indigo-700 font-bold">
               HTTP POST 201
             </span>
-            <p className="text-[11px] text-slate-500 mt-1 font-medium truncate">/api/v1/crm/lead-channels/webhook/</p>
+            <p className="text-[10px] sm:text-[11px] text-slate-500 mt-1 font-medium truncate">/api/v1/crm/lead-channels/webhook/</p>
           </div>
         </div>
       </div>
@@ -1158,80 +1158,80 @@ Aditya Heavy Engineering,Vikram Aditya,vikram.aditya@aditya-eng.com,+91 99887 76
               <Download className="w-5 h-5 text-blue-600" />
               <span>Developer Resources & Templates (Downloadable)</span>
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between">
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
-                    <FileText className="w-5 h-5" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-2.5 sm:mb-3">
+                    <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <h4 className="font-bold text-slate-900 text-sm mb-1">Official CRM & API Guide (PDF)</h4>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Complete enterprise operating manual with module walkthroughs, JSON schemas, webhooks, and troubleshooting.
+                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm mb-1 leading-snug">Official CRM & API Guide (PDF)</h4>
+                  <p className="text-[11px] sm:text-xs text-slate-500 mb-3 sm:mb-4">
+                    Complete enterprise operating manual with module walkthroughs and schemas.
                   </p>
                 </div>
                 <button
                   onClick={handleDownloadManual}
-                  className="w-full py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                  className="w-full py-1.5 sm:py-2 px-2.5 sm:px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download Guide (.pdf)</span>
+                  <Download className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Download Guide (.pdf)</span>
                 </button>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between">
+              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between">
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
-                    <FileCode className="w-5 h-5" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2.5 sm:mb-3">
+                    <FileCode className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <h4 className="font-bold text-slate-900 text-sm mb-1">Ready-to-Deploy HTML Form</h4>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Standalone, styled contact form pre-configured with fetch() calls directly into your webhook.
+                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm mb-1 leading-snug">Ready-to-Deploy HTML Form</h4>
+                  <p className="text-[11px] sm:text-xs text-slate-500 mb-3 sm:mb-4">
+                    Standalone, styled contact form pre-configured with fetch() calls.
                   </p>
                 </div>
                 <button
                   onClick={handleDownloadHtmlForm}
-                  className="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                  className="w-full py-1.5 sm:py-2 px-2.5 sm:px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download HTML Form</span>
+                  <Download className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Download HTML Form</span>
                 </button>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-amber-300 transition-all flex flex-col justify-between">
+              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-amber-300 transition-all flex flex-col justify-between">
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3">
-                    <Layers className="w-5 h-5" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-2.5 sm:mb-3">
+                    <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <h4 className="font-bold text-slate-900 text-sm mb-1">Postman API Collection</h4>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Importable Postman collection containing all CRM endpoints, test payloads, and headers.
+                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm mb-1 leading-snug">Postman API Collection</h4>
+                  <p className="text-[11px] sm:text-xs text-slate-500 mb-3 sm:mb-4">
+                    Importable Postman collection containing all CRM endpoints & payloads.
                   </p>
                 </div>
                 <button
                   onClick={handleDownloadPostmanCollection}
-                  className="w-full py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                  className="w-full py-1.5 sm:py-2 px-2.5 sm:px-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download Postman (.json)</span>
+                  <Download className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Download Postman (.json)</span>
                 </button>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-purple-300 transition-all flex flex-col justify-between">
+              <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md hover:border-purple-300 transition-all flex flex-col justify-between">
                 <div>
-                  <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-3">
-                    <Sliders className="w-5 h-5" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-2.5 sm:mb-3">
+                    <Sliders className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <h4 className="font-bold text-slate-900 text-sm mb-1">Leads Import CSV Template</h4>
-                  <p className="text-xs text-slate-500 mb-4">
-                    Clean CSV template with sample data for bulk importing historical leads into the system.
+                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm mb-1 leading-snug">Leads Import CSV Template</h4>
+                  <p className="text-[11px] sm:text-xs text-slate-500 mb-3 sm:mb-4">
+                    Clean CSV template with sample data for bulk importing historical leads.
                   </p>
                 </div>
                 <button
                   onClick={handleDownloadLeadsCsv}
-                  className="w-full py-2 px-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
+                  className="w-full py-1.5 sm:py-2 px-2.5 sm:px-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download CSV Template</span>
+                  <Download className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Download CSV Template</span>
                 </button>
               </div>
             </div>

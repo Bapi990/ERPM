@@ -38,11 +38,11 @@ export const OnboardingPage: React.FC = () => {
     setLoading(true);
     try {
       const [mRes, eRes] = await Promise.all([
-        api.getOnboardingMilestones(),
-        api.getEmployees(),
+        api.getOnboardingMilestones().catch(() => ({ results: [] })),
+        api.getEmployees().catch(() => ({ results: [] })),
       ]);
-      setMilestones(mRes?.data?.results || mRes?.data || []);
-      setEmployees(eRes?.data?.results || eRes?.data || []);
+      setMilestones(mRes?.results || (Array.isArray(mRes) ? mRes : mRes?.data?.results || mRes?.data || []));
+      setEmployees(eRes?.results || (Array.isArray(eRes) ? eRes : eRes?.data?.results || eRes?.data || []));
     } catch (err) {
       console.error('Failed to load onboarding data', err);
     } finally {
@@ -52,10 +52,12 @@ export const OnboardingPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const unsub = subscribe('onboarding_*', () => {
-      loadData();
-    });
-    return () => unsub();
+    const unsub1 = subscribe('onboarding_*', () => loadData());
+    const unsub2 = subscribe('employee_*', () => loadData());
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   const handleToggleMilestone = async (id: string, currentStatus: boolean) => {
@@ -155,50 +157,50 @@ export const OnboardingPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">New Hires Active</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{onboardingEmployees.length} Hires</p>
-            <p className="text-xs text-primary-600 mt-1">Currently in induction</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">New Hires Active</p>
+            <p className="text-base sm:text-2xl font-bold text-gray-900 mt-1 truncate">{onboardingEmployees.length} Hires</p>
+            <p className="text-[11px] sm:text-xs text-primary-600 mt-0.5 sm:mt-1 truncate">Currently in induction</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <UserPlus size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <UserPlus className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Cohort Progress</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{completionPercentage}%</p>
-            <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-              <CheckCircle2 size={12} /> On track for 30-day target
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Cohort Progress</p>
+            <p className="text-base sm:text-2xl font-bold text-emerald-600 mt-1 truncate">{completionPercentage}%</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <CheckCircle2 size={12} className="shrink-0" /> On track for 30-day target
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <CheckCircle2 size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Completed Tasks</p>
-            <p className="text-2xl font-bold text-purple-600 mt-1">{completedMilestonesCount} / {totalMilestonesCount}</p>
-            <p className="text-xs text-purple-600 mt-1">Verified checkpoints</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Completed Tasks</p>
+            <p className="text-base sm:text-2xl font-bold text-purple-600 mt-1 truncate">{completedMilestonesCount} / {totalMilestonesCount}</p>
+            <p className="text-[11px] sm:text-xs text-purple-600 mt-0.5 sm:mt-1 truncate">Verified checkpoints</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-            <FileCheck size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
+            <FileCheck className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">IT & Security Check</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">100% Cleared</p>
-            <p className="text-xs text-amber-600 mt-1">Credentials provisioned</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">IT & Security Check</p>
+            <p className="text-base sm:text-2xl font-bold text-amber-600 mt-1 truncate">100% Cleared</p>
+            <p className="text-[11px] sm:text-xs text-amber-600 mt-0.5 sm:mt-1 truncate">Credentials provisioned</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <ShieldCheck size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+            <ShieldCheck className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>

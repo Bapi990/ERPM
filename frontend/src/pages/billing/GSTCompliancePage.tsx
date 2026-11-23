@@ -99,35 +99,35 @@ export const GSTCompliancePage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
-          <span className="text-xs font-bold text-slate-500 block mb-1">Total Output Tax (Sales)</span>
-          <p className="text-2xl font-black text-slate-900 font-mono">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-5 shadow-xs">
+          <span className="text-[11px] sm:text-xs font-bold text-slate-500 block mb-0.5 sm:mb-1">Total Output Tax (Sales)</span>
+          <p className="text-base sm:text-2xl font-black text-slate-900 font-mono truncate">
             ₹{Number(complianceData?.outward_supplies?.total_tax || 63000).toLocaleString('en-IN')}
           </p>
-          <span className="text-[11px] text-slate-400 font-medium">CGST + SGST + IGST Collected</span>
+          <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate block">CGST + SGST + IGST</span>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
-          <span className="text-xs font-bold text-slate-500 block mb-1">Total Input Tax Credit (ITC)</span>
-          <p className="text-2xl font-black text-emerald-600 font-mono">
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-5 shadow-xs">
+          <span className="text-[11px] sm:text-xs font-bold text-slate-500 block mb-0.5 sm:mb-1">Total Input Tax Credit (ITC)</span>
+          <p className="text-base sm:text-2xl font-black text-emerald-600 font-mono truncate">
             ₹{Number(complianceData?.inward_supplies?.total_itc || 45000).toLocaleString('en-IN')}
           </p>
-          <span className="text-[11px] text-emerald-600 font-medium">Eligible ITC from Purchases</span>
+          <span className="text-[10px] sm:text-[11px] text-emerald-600 font-medium truncate block">Eligible ITC Purchases</span>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
-          <span className="text-xs font-bold text-slate-500 block mb-1">Net GST Payable (Cash)</span>
-          <p className="text-2xl font-black text-blue-700 font-mono">
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-5 shadow-xs">
+          <span className="text-[11px] sm:text-xs font-bold text-slate-500 block mb-0.5 sm:mb-1">Net GST Payable (Cash)</span>
+          <p className="text-base sm:text-2xl font-black text-blue-700 font-mono truncate">
             ₹{Number(complianceData?.net_tax_payable || 18000).toLocaleString('en-IN')}
           </p>
-          <span className="text-[11px] text-blue-600 font-medium">Output Tax less Available ITC</span>
+          <span className="text-[10px] sm:text-[11px] text-blue-600 font-medium truncate block">Output Tax less ITC</span>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
-          <span className="text-xs font-bold text-slate-500 block mb-1">GSTR-2B Matching Rate</span>
-          <p className="text-2xl font-black text-purple-700 font-mono">98.4%</p>
-          <span className="text-[11px] text-purple-600 font-medium">Auto-drafted ITC verified</span>
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-5 shadow-xs">
+          <span className="text-[11px] sm:text-xs font-bold text-slate-500 block mb-0.5 sm:mb-1">GSTR-2B Matching Rate</span>
+          <p className="text-base sm:text-2xl font-black text-purple-700 font-mono truncate">98.4%</p>
+          <span className="text-[10px] sm:text-[11px] text-purple-600 font-medium truncate block">Auto-drafted verified</span>
         </div>
       </div>
 

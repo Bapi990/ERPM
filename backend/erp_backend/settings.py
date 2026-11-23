@@ -38,6 +38,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    'erp_backend.db_middleware.DatabaseFailoverMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -85,10 +86,12 @@ def check_mysql_health():
         conn.close()
         return True
     except Exception as e:
-        print(f">>> [MYSQL HEALTH CHECK FAILED] {e}")
+        print(f">>> [MYSQL HEALTH NOTICE] {e}")
         return False
 
-if check_mysql_health():
+MYSQL_AVAILABLE = check_mysql_health()
+
+if MYSQL_AVAILABLE:
     print(">>> [DATABASE ENGINE] Connected to Hostinger MySQL (srv685.hstgr.io)")
     DATABASES = {
         'default': {
@@ -98,15 +101,19 @@ if check_mysql_health():
             'PASSWORD': os.environ.get('DB_PASSWORD', 'Erp@Odias909'),
             'HOST': os.environ.get('DB_HOST', 'srv685.hstgr.io'),
             'PORT': os.environ.get('DB_PORT', '3306'),
-            'CONN_MAX_AGE': 60,
+            'CONN_MAX_AGE': 600,
             'OPTIONS': {
                 'charset': 'utf8mb4',
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             },
+        },
+        'sqlite': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 else:
-    print(">>> [DATABASE ENGINE] Failover to Local SQLite (db.sqlite3)")
+    print(">>> [DATABASE ENGINE] Hostinger MySQL limit reached/unavailable. Active Failover to Local SQLite (db.sqlite3).")
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',

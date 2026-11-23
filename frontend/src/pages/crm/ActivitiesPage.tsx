@@ -152,36 +152,36 @@ export const ActivitiesPage: React.FC = () => {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Phone Calls</span>
-          <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-slate-900">{totalCalls}</span>
-            <span className="text-xs text-emerald-600 font-bold">Inbound & Outbound</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Phone Calls</span>
+          <div className="mt-1 sm:mt-2 flex flex-col sm:flex-row sm:items-baseline sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-slate-900">{totalCalls}</span>
+            <span className="text-[10px] sm:text-xs text-emerald-600 font-bold truncate">Inbound & Outbound</span>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Meetings & Demos</span>
-          <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-blue-600">{totalMeetings}</span>
-            <span className="text-xs text-slate-500 font-semibold">Conducted</span>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block">Meetings & Demos</span>
+          <div className="mt-1 sm:mt-2 flex flex-col sm:flex-row sm:items-baseline sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-blue-600">{totalMeetings}</span>
+            <span className="text-[10px] sm:text-xs text-slate-500 font-semibold truncate">Conducted</span>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Completed Activities</span>
-          <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-emerald-600">{totalCompleted}</span>
-            <span className="text-xs text-slate-500 font-semibold">Logged with Outcome</span>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block">Completed Activities</span>
+          <div className="mt-1 sm:mt-2 flex flex-col sm:flex-row sm:items-baseline sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-emerald-600">{totalCompleted}</span>
+            <span className="text-[10px] sm:text-xs text-slate-500 font-semibold truncate">Logged with Outcome</span>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Touchpoints</span>
-          <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-indigo-600">{activities.length}</span>
-            <span className="text-xs text-indigo-600 font-bold">100% Tracked</span>
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+          <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Touchpoints</span>
+          <div className="mt-1 sm:mt-2 flex flex-col sm:flex-row sm:items-baseline sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-indigo-600">{activities.length}</span>
+            <span className="text-[10px] sm:text-xs text-indigo-600 font-bold truncate">100% Tracked</span>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Users, Plus, Mail, Phone, Building2, Eye, Edit3, Trash2,
+  Users, Plus, Mail, Phone, Building2, Eye, EyeOff, Edit3, Trash2,
   Shield, Briefcase, ArrowLeft, ArrowRight, Printer, CheckCircle2, Clock,
   Calendar, Award, AlertCircle, FileText, Lock, ChevronRight,
   Upload, Download, FileCheck, Landmark, CreditCard, Sparkles,
@@ -167,6 +167,9 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [designations, setDesignations] = useState<any[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(true);
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
@@ -375,22 +378,36 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
 
   useEffect(() => {
     loadData();
+    const unsub1 = subscribe('employee_*', () => loadData());
+    const unsub2 = subscribe('department:*', () => loadData());
+    const unsub3 = subscribe('designation:*', () => loadData());
+    const unsub4 = subscribe('branch:*', () => loadData());
+    const unsub5 = subscribe('hrms_*', () => loadData());
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+      unsub4();
+      unsub5();
+    };
   }, []);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [empRes, brRes, depRes] = await Promise.all([
+      const [empRes, brRes, depRes, desRes] = await Promise.all([
         api.getEmployees().catch(() => ({ results: [] })),
         api.getOrgBranches().catch(() => ({ results: [] })),
         api.getDepartments().catch(() => ({ results: [] })),
+        api.getDesignations().catch(() => ({ results: [] })),
       ]);
-      const empList: Employee[] = empRes.results || empRes || [];
+      const empList: Employee[] = empRes.results || (Array.isArray(empRes) ? empRes : []);
       const finalEmployees = empList.length > 0 ? empList : FALLBACK_EMPLOYEES;
       setEmployees(finalEmployees);
       localStorage.setItem('kalinga_hrms_employees', JSON.stringify(finalEmployees));
-      setBranches(brRes.results || brRes || []);
-      setDepartments(depRes.results || depRes || []);
+      setBranches(brRes.results || (Array.isArray(brRes) ? brRes : []));
+      setDepartments(depRes.results || (Array.isArray(depRes) ? depRes : []));
+      setDesignations(desRes.results || (Array.isArray(desRes) ? desRes : []));
 
       if (viewEmployee) {
         const fresh = finalEmployees.find((e) => e.id === viewEmployee.id);
@@ -524,13 +541,31 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
     const defaultRole = mode === 'hr' ? 'hr_manager' : mode === 'manager' ? 'manager' : 'employee';
     const defaultRoleObj = AVAILABLE_ROLES.find((r) => r.code === defaultRole) || AVAILABLE_ROLES[6];
 
+    const defaultBranch = branches[0]?.name || 'Bhubaneswar Corporate Headquarters';
+    const defaultDept = (
+      mode === 'hr'
+        ? departments.find(d => d.name?.toLowerCase().includes('hr') || d.name?.toLowerCase().includes('talent'))?.name
+        : mode === 'manager'
+        ? departments.find(d => d.name?.toLowerCase().includes('engineer') || d.name?.toLowerCase().includes('cloud') || d.name?.toLowerCase().includes('operation'))?.name
+        : departments[0]?.name
+    ) || departments[0]?.name || '';
+
+    const defaultDesig = (
+      mode === 'hr'
+        ? designations.find(d => d.title?.toLowerCase().includes('hr') || d.title?.toLowerCase().includes('director'))?.title
+        : mode === 'manager'
+        ? designations.find(d => d.title?.toLowerCase().includes('lead') || d.title?.toLowerCase().includes('director') || d.title?.toLowerCase().includes('manager'))?.title
+        : designations[0]?.title
+    ) || designations[0]?.title || '';
+
     setFormData({
       ...initialFormState,
       employee_id: nextCode,
       role_code: defaultRole,
       role_name: defaultRoleObj.name,
-      department: mode === 'hr' ? 'Human Resources' : mode === 'manager' ? 'Engineering' : 'General Operations',
-      designation: mode === 'hr' ? 'HR Executive / People Partner' : mode === 'manager' ? 'Engineering Manager' : 'Associate Software Engineer',
+      branch: defaultBranch,
+      department: defaultDept,
+      designation: defaultDesig,
       permissions: DEFAULT_ROLE_PERMISSIONS[defaultRole] || [],
       assigned_hr: mode === 'hr' ? '' : (hrStaff ? hrStaff.id : ''),
       reporting_manager: (mode === 'hr' || mode === 'manager') ? '' : (managerStaff ? managerStaff.id : ''),
@@ -610,6 +645,30 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
 
   const isEdit = viewMode === 'edit';
 
+  // Live Email Uniqueness Checker
+  const emailVal = formData.email?.trim().toLowerCase();
+  const existingEmailEmp = useMemo(() => {
+    if (!emailVal || !emailVal.includes('@')) return null;
+    return employees.find((e) => (e.email || '').trim().toLowerCase() === emailVal && e.id !== editingEmployee?.id) || null;
+  }, [emailVal, employees, editingEmployee]);
+
+  const isEmailUnique = useMemo(() => {
+    return Boolean(emailVal && emailVal.includes('@') && emailVal.includes('.') && !existingEmailEmp);
+  }, [emailVal, existingEmailEmp]);
+
+  // Live Password Match Checker
+  const isPasswordMatch = Boolean(
+    formData.password &&
+    formData.confirm_password &&
+    formData.password === formData.confirm_password &&
+    formData.password.length >= 4
+  );
+
+  const hasPasswordMismatch = Boolean(
+    formData.confirm_password &&
+    formData.password !== formData.confirm_password
+  );
+
   // Comprehensive Step-by-Step Validation Checker
   // Guarantees no step gets a false green tick if skipped or left incomplete in the middle
   const getStepStatus = (stepNumber: number): { isComplete: boolean; error?: string } => {
@@ -618,10 +677,17 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
         // Personal Profile: Full Name and Email are strictly required
         const hasName = Boolean(formData.full_name?.trim() || (formData.first_name?.trim() && formData.last_name?.trim()));
         const hasEmail = Boolean(formData.email?.trim() && formData.email.includes('@') && formData.email.includes('.'));
-        const isComplete = Boolean(hasName && hasEmail);
+        const emailConflict = Boolean(existingEmailEmp);
+        const isComplete = Boolean(hasName && hasEmail && !emailConflict);
         return {
           isComplete,
-          error: !hasName ? 'Full Name required' : !hasEmail ? 'Valid Email required' : undefined,
+          error: !hasName
+            ? 'Full Name required'
+            : !hasEmail
+            ? 'Valid Email required'
+            : emailConflict
+            ? `Email already registered to ${existingEmailEmp?.full_name}`
+            : undefined,
         };
       }
       case 2: {
@@ -711,6 +777,13 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check if email is already taken
+    if (existingEmailEmp) {
+      alert(`⚠️ Email '${formData.email}' is already registered in Odias ERP to ${existingEmailEmp.full_name} (${existingEmailEmp.employee_id} - ${existingEmailEmp.role_name || existingEmailEmp.designation_title || 'Staff'}). Please enter a unique email address or update their existing record.`);
+      setCurrentStep(1);
+      return;
+    }
+
     // Validate that all required steps are complete before saving
     for (const stepNum of [1, 2, 3, 4, 5]) {
       const status = getStepStatus(stepNum);
@@ -744,9 +817,16 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
     if (!firstName) firstName = 'Employee';
     if (!lastName) lastName = 'Member';
 
-    // Map branch/department to backend foreign keys if available
-    const matchedBranch = branches.find((b) => b.name?.toLowerCase().includes(formData.branch.toLowerCase())) || branches[0];
-    const matchedDept = departments.find((d) => d.name?.toLowerCase().includes(formData.department.toLowerCase())) || departments[0];
+    // Map branch/department/designation to backend foreign keys
+    const matchedBranch = branches.find((b) => b.name?.toLowerCase() === formData.branch?.toLowerCase()) ||
+                          branches.find((b) => b.name?.toLowerCase().includes(formData.branch?.toLowerCase())) ||
+                          branches[0];
+    const matchedDept = departments.find((d) => d.name?.toLowerCase() === formData.department?.toLowerCase()) ||
+                        departments.find((d) => d.name?.toLowerCase().includes(formData.department?.toLowerCase())) ||
+                        departments[0];
+    const matchedDesig = designations.find((d) => d.title?.toLowerCase() === formData.designation?.toLowerCase()) ||
+                         designations.find((d) => d.title?.toLowerCase().includes(formData.designation?.toLowerCase())) ||
+                         designations[0];
 
     const payload: any = {
       ...formData,
@@ -756,7 +836,15 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
       full_name: `${firstName} ${lastName}`,
       branch: matchedBranch ? matchedBranch.id : undefined,
       department: matchedDept ? matchedDept.id : undefined,
-      uploaded_documents: formDocs,
+      designation: matchedDesig ? matchedDesig.id : (formData.designation?.trim() || undefined),
+      date_of_birth: formData.date_of_birth?.trim() ? formData.date_of_birth : null,
+      date_of_joining: formData.date_of_joining?.trim() ? formData.date_of_joining : new Date().toISOString().split('T')[0],
+      monthly_ctc: Number(formData.monthly_ctc) || 0,
+      basic_salary: Number(formData.basic_salary) || 0,
+      hra: Number(formData.hra) || 0,
+      da: Number(formData.da) || 0,
+      other_allowances: Number(formData.other_allowances) || 0,
+      uploaded_documents: formDocs.filter(d => Boolean(d.name?.trim()) && Boolean(d.file_name || d.file_data)),
     };
 
     if (!payload.assigned_hr || payload.assigned_hr === '---------' || payload.assigned_hr === 'default_hr') {
@@ -764,9 +852,6 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
     }
     if (!payload.reporting_manager || payload.reporting_manager === '---------') {
       delete payload.reporting_manager;
-    }
-    if (payload.designation) {
-      delete payload.designation;
     }
 
     try {
@@ -1190,15 +1275,38 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Email Address *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">Email Address *</label>
+                    {existingEmailEmp && (
+                      <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                        Already Registered
+                      </span>
+                    )}
+                    {isEmailUnique && (
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        ✓ Available
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="rajesh.m@odiaserp.com"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl font-mono"
+                    className={`w-full px-3 py-2 text-xs border rounded-xl font-mono transition-colors ${
+                      existingEmailEmp
+                        ? 'border-rose-400 bg-rose-50/20 text-rose-900 focus:ring-rose-400'
+                        : isEmailUnique
+                        ? 'border-emerald-400 bg-emerald-50/10 focus:ring-emerald-400'
+                        : 'border-slate-300'
+                    }`}
                   />
+                  {existingEmailEmp && (
+                    <div className="mt-1.5 p-2 bg-rose-50 border border-rose-200 rounded-lg text-[11px] text-rose-700 font-medium">
+                      ⚠️ <strong>Email already registered</strong> to <strong>{existingEmailEmp.full_name}</strong> ({existingEmailEmp.employee_id} - {existingEmailEmp.role_name || existingEmailEmp.designation_title || 'Staff'}). Please use a different email address.
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -1301,44 +1409,71 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Branch</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">Branch *</label>
+                    <span className="text-[10px] text-slate-400 font-semibold">{branches.length} configured</span>
+                  </div>
                   <select
                     value={formData.branch}
                     onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white font-medium"
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white font-medium focus:ring-blue-500"
                   >
-                    <option value="">---------</option>
-                    {BRANCH_OPTIONS.map((b) => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
+                    <option value="">--------- Select Branch ---------</option>
+                    {branches.length > 0 ? (
+                      branches.map((b) => (
+                        <option key={b.id || b.name} value={b.name}>{b.name}</option>
+                      ))
+                    ) : (
+                      BRANCH_OPTIONS.map((b) => (
+                        <option key={b} value={b}>{b}</option>
+                      ))
+                    )}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Department</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">Department *</label>
+                    <span className="text-[10px] text-emerald-600 font-semibold">{departments.length} Live Depts</span>
+                  </div>
                   <select
                     value={formData.department}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white font-medium"
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white font-medium focus:ring-blue-500"
                   >
-                    <option value="">---------</option>
-                    {DEPARTMENT_OPTIONS.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
+                    <option value="">--------- Select Department ---------</option>
+                    {departments.length > 0 ? (
+                      departments.map((d) => (
+                        <option key={d.id || d.name} value={d.name}>{d.name}</option>
+                      ))
+                    ) : (
+                      DEPARTMENT_OPTIONS.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))
+                    )}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Designation</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">Designation *</label>
+                    <span className="text-[10px] text-purple-600 font-semibold">{designations.length} Live Roles</span>
+                  </div>
                   <select
                     value={formData.designation}
                     onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white font-medium"
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white font-medium focus:ring-blue-500"
                   >
-                    <option value="">---------</option>
-                    {DESIGNATION_OPTIONS.map((des) => (
-                      <option key={des} value={des}>{des}</option>
-                    ))}
+                    <option value="">--------- Select Designation ---------</option>
+                    {designations.length > 0 ? (
+                      designations.map((des) => (
+                        <option key={des.id || des.title} value={des.title}>{des.title}</option>
+                      ))
+                    ) : (
+                      DESIGNATION_OPTIONS.map((des) => (
+                        <option key={des} value={des}>{des}</option>
+                      ))
+                    )}
                   </select>
                 </div>
 
@@ -1733,45 +1868,141 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
           {/* STEP 5: PORTAL AUTHENTICATION & PASSWORD */}
           {currentStep === 5 && (
             <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-5 animate-in fade-in duration-150">
-              <div className="flex items-center space-x-2.5 pb-3 border-b border-slate-100">
-                <div className="p-2 bg-rose-50 text-rose-700 rounded-xl">
-                  <KeyRound className="w-5 h-5" />
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 border-b border-slate-100 gap-3">
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-2 bg-rose-50 text-rose-700 rounded-xl">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-extrabold text-slate-900">Employee Portal Authentication & Password</h2>
+                    <p className="text-xs text-slate-500">
+                      Password used for employee portal login, attendance selfie punches, and personal payslip access.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-base font-extrabold text-slate-900">Employee Portal Authentication & Password</h2>
-                  <p className="text-xs text-slate-500">
-                    Password used for employee portal login, attendance selfie punches, and personal payslip access.
-                  </p>
-                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+                    const generated = `Odias@${randomSuffix}!`;
+                    setFormData({ ...formData, password: generated, confirm_password: generated });
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-all shadow-sm"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Auto-Generate Password</span>
+                </button>
               </div>
+
+              {/* Password Match Banner */}
+              {isPasswordMatch && (
+                <div className="flex items-center space-x-2.5 p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-bold animate-in fade-in duration-200 shadow-sm">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <div>
+                    <span className="font-extrabold text-emerald-900">✓ Passwords Match!</span>
+                    <span className="block text-[11px] font-medium text-emerald-700 mt-0.5">
+                      Both credentials are identical and verified for employee self-service login.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {hasPasswordMismatch && (
+                <div className="flex items-center space-x-2.5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-semibold animate-in fade-in duration-200">
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                  <div>
+                    <span className="font-bold text-rose-900">⚠️ Passwords Do Not Match</span>
+                    <span className="block text-[11px] text-rose-700 mt-0.5">
+                      Please ensure both the portal password and confirmation match exactly.
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {isEdit ? 'New Password (Leave blank to keep unchanged)' : 'Portal Password *'}
-                  </label>
-                  <input
-                    type="password"
-                    required={!isEdit}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="••••••••••••"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl font-mono"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      {isEdit ? 'New Password (Leave blank to keep unchanged)' : 'Portal Password *'}
+                    </label>
+                    {isPasswordMatch && (
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        ✓ Verified Match
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required={!isEdit}
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="••••••••••••"
+                      className={`w-full pl-3 pr-20 py-2 text-xs border rounded-xl font-mono transition-all ${
+                        isPasswordMatch
+                          ? 'border-emerald-500 bg-emerald-50/20 text-emerald-950 font-bold focus:ring-emerald-500'
+                          : hasPasswordMismatch
+                          ? 'border-rose-400 bg-rose-50/10 text-rose-950 focus:ring-rose-400'
+                          : 'border-slate-300'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={`absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-bold rounded-lg border flex items-center space-x-1 transition-all ${
+                        isPasswordMatch
+                          ? 'bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600 shadow-sm shadow-emerald-200'
+                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                      }`}
+                      title={showPassword ? 'Hide password' : 'View password'}
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showPassword ? 'Hide' : 'View'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Confirm Password {isEdit ? '' : '*'}
-                  </label>
-                  <input
-                    type="password"
-                    required={!isEdit && Boolean(formData.password)}
-                    value={formData.confirm_password}
-                    onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
-                    placeholder="••••••••••••"
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl font-mono"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Confirm Password {isEdit ? '' : '*'}
+                    </label>
+                    {isPasswordMatch && (
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        ✓ Verified Match
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required={!isEdit && Boolean(formData.password)}
+                      value={formData.confirm_password}
+                      onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
+                      placeholder="••••••••••••"
+                      className={`w-full pl-3 pr-20 py-2 text-xs border rounded-xl font-mono transition-all ${
+                        isPasswordMatch
+                          ? 'border-emerald-500 bg-emerald-50/20 text-emerald-950 font-bold focus:ring-emerald-500'
+                          : hasPasswordMismatch
+                          ? 'border-rose-400 bg-rose-50/10 text-rose-950 focus:ring-rose-400'
+                          : 'border-slate-300'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className={`absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-bold rounded-lg border flex items-center space-x-1 transition-all ${
+                        isPasswordMatch
+                          ? 'bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600 shadow-sm shadow-emerald-200'
+                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                      }`}
+                      title={showConfirmPassword ? 'Hide password' : 'View password'}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showConfirmPassword ? 'Hide' : 'View'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

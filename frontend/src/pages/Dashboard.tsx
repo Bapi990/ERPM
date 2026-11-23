@@ -510,7 +510,7 @@ export const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6 pb-12 font-sans">
+    <div className="space-y-6 pb-12 font-sans w-full max-w-full min-w-0 overflow-x-hidden">
       {/* Success Notification Alert */}
       {successToast && (
         <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between shadow-xs animate-in slide-in-from-top-2">
@@ -525,12 +525,12 @@ export const Dashboard: React.FC = () => {
       )}
 
       {/* 2. TOP WELCOME HEADER & REALTIME CONTROLS */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0 max-w-full">
+        <div className="min-w-0 max-w-full">
+          <h1 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2 flex-wrap">
             <span>👋</span> Welcome Back, {user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : (user?.username || 'Super Admin')}!
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium flex items-center gap-2">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium flex items-center gap-2 flex-wrap">
             <span>Executive Business Operations Dashboard & Live Telemetry.</span>
             <span className="font-mono text-slate-400">• {currentTime}</span>
           </p>
@@ -612,107 +612,111 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. 4 CORE REALTIME ERP METRIC CARDS (Clickable to Direct Modules) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      {/* 3. 4 CORE REALTIME ERP METRIC CARDS (Clickable to Direct Modules - Responsive 2 per row on mobile & tablet) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
         {/* KPI 1: Active Enterprise Workforce */}
-        <div
-          onClick={() => navigate('/app/hrms/employees')}
-          className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-purple-300 transition-all flex flex-col justify-between group cursor-pointer"
+        <Link
+          to="/app/hrms/employees"
+          className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-xs hover:shadow-lg hover:border-purple-400 hover:-translate-y-0.5 active:translate-y-0 transition-all flex flex-col justify-between group cursor-pointer block"
+          title="Open Active Workforce Directory"
         >
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-purple-500/25 shrink-0 group-hover:scale-105 transition-transform">
-              <Users className="w-6 h-6" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3.5">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md sm:shadow-lg shadow-purple-500/25 shrink-0 group-hover:scale-110 transition-transform">
+              <Users className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <span className="text-xs font-bold text-slate-500 block leading-tight">Active Workforce</span>
-              <span className="text-2xl font-black text-slate-900 font-mono tracking-tight block mt-0.5">
+            <div className="min-w-0 flex-1">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-500 block leading-tight truncate group-hover:text-purple-600 transition-colors">Active Workforce</span>
+              <span className="text-base sm:text-2xl font-black text-slate-900 font-mono tracking-tight block mt-0.5 truncate">
                 {workforceCount} Staff
               </span>
-              <span className="inline-flex items-center text-xs font-bold text-emerald-600 mt-0.5">
-                <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" /> 100% Onboarded
+              <span className="inline-flex items-center text-[10px] sm:text-xs font-bold text-emerald-600 mt-0.5 truncate max-w-full">
+                <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-0.5 shrink-0" /> 100% Onboarded
               </span>
             </div>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Manage Staff & Roles</span>
-            <ArrowRight className="w-3.5 h-3.5 text-purple-600 group-hover:translate-x-1 transition-transform" />
+          <div className="mt-2.5 sm:mt-3 pt-2 sm:pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500 group-hover:text-purple-600 transition-colors font-semibold">
+            <span className="truncate mr-1">Manage Staff & Roles</span>
+            <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-600 group-hover:translate-x-1.5 transition-transform shrink-0" />
           </div>
-        </div>
+        </Link>
 
         {/* KPI 2: Live Verified Attendance Rate */}
-        <div
-          onClick={() => navigate('/app/hrms/attendance')}
-          className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group cursor-pointer"
+        <Link
+          to="/app/hrms/attendance"
+          className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-xs hover:shadow-lg hover:border-emerald-400 hover:-translate-y-0.5 active:translate-y-0 transition-all flex flex-col justify-between group cursor-pointer block"
+          title="Open Live Attendance Register"
         >
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25 shrink-0 group-hover:scale-105 transition-transform">
-              <CalendarCheck className="w-6 h-6" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3.5">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white flex items-center justify-center shadow-md sm:shadow-lg shadow-emerald-500/25 shrink-0 group-hover:scale-110 transition-transform">
+              <CalendarCheck className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <span className="text-xs font-bold text-slate-500 block leading-tight">Live Attendance Rate</span>
-              <span className="text-2xl font-black text-slate-900 font-mono tracking-tight block mt-0.5">
+            <div className="min-w-0 flex-1">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-500 block leading-tight truncate group-hover:text-emerald-600 transition-colors">Live Attendance Rate</span>
+              <span className="text-base sm:text-2xl font-black text-slate-900 font-mono tracking-tight block mt-0.5 truncate">
                 {liveAttendanceRate}
               </span>
-              <span className="inline-flex items-center text-xs font-bold text-emerald-600 mt-0.5">
-                <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" /> Present: {hrmsStats?.present_today || Math.round(workforceCount * 0.85)} • Late: {hrmsStats?.late_today || 1}
+              <span className="inline-flex items-center text-[10px] sm:text-xs font-bold text-emerald-600 mt-0.5 truncate max-w-full">
+                <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-0.5 shrink-0" /> Present: {hrmsStats?.present_today || Math.round(workforceCount * 0.85)} • Late: {hrmsStats?.late_today || 1}
               </span>
             </div>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Open Attendance Register</span>
-            <ArrowRight className="w-3.5 h-3.5 text-emerald-600 group-hover:translate-x-1 transition-transform" />
+          <div className="mt-2.5 sm:mt-3 pt-2 sm:pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500 group-hover:text-emerald-600 transition-colors font-semibold">
+            <span className="truncate mr-1">Open Attendance Register</span>
+            <ArrowRight className="w-3.5 h-3.5 text-emerald-600 group-hover:translate-x-1.5 transition-transform shrink-0" />
           </div>
-        </div>
+        </Link>
 
         {/* KPI 3: Commercial Invoiced Sales */}
-        <div
-          onClick={() => navigate('/app/billing/invoices')}
-          className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-amber-300 transition-all flex flex-col justify-between group cursor-pointer"
+        <Link
+          to="/app/billing/invoices"
+          className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-xs hover:shadow-lg hover:border-amber-400 hover:-translate-y-0.5 active:translate-y-0 transition-all flex flex-col justify-between group cursor-pointer block"
+          title="Open GST Invoicing & Ledger"
         >
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/25 shrink-0 font-bold text-xl group-hover:scale-105 transition-transform">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3.5">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-md sm:shadow-lg shadow-amber-500/25 shrink-0 font-bold text-base sm:text-xl group-hover:scale-110 transition-transform">
               ₹
             </div>
-            <div>
-              <span className="text-xs font-bold text-slate-500 block leading-tight">Commercial Invoicing</span>
-              <span className="text-2xl font-black text-slate-900 font-mono tracking-tight block mt-0.5">
+            <div className="min-w-0 flex-1">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-500 block leading-tight truncate group-hover:text-amber-600 transition-colors">Commercial Invoicing</span>
+              <span className="text-base sm:text-2xl font-black text-slate-900 font-mono tracking-tight block mt-0.5 truncate">
                 ₹{totalInvoicedSales.toLocaleString('en-IN')}
               </span>
-              <span className="inline-flex items-center text-xs font-bold text-emerald-600 mt-0.5">
-                <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" /> Recv: ₹{totalReceivedCash.toLocaleString('en-IN')}
+              <span className="inline-flex items-center text-[10px] sm:text-xs font-bold text-emerald-600 mt-0.5 truncate max-w-full">
+                <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-0.5 shrink-0" /> Recv: ₹{totalReceivedCash.toLocaleString('en-IN')}
               </span>
             </div>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-            <span>GST Invoicing & Ledger</span>
-            <ArrowRight className="w-3.5 h-3.5 text-amber-600 group-hover:translate-x-1 transition-transform" />
+          <div className="mt-2.5 sm:mt-3 pt-2 sm:pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500 group-hover:text-amber-600 transition-colors font-semibold">
+            <span className="truncate mr-1">GST Invoicing & Ledger</span>
+            <ArrowRight className="w-3.5 h-3.5 text-amber-600 group-hover:translate-x-1.5 transition-transform shrink-0" />
           </div>
-        </div>
+        </Link>
 
         {/* KPI 4: CRM Active Pipeline Deals */}
-        <div
-          onClick={() => navigate('/app/crm/pipeline')}
-          className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between group cursor-pointer"
+        <Link
+          to="/app/crm/pipeline"
+          className="relative overflow-hidden bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-xs hover:shadow-lg hover:border-blue-400 hover:-translate-y-0.5 active:translate-y-0 transition-all flex flex-col justify-between group cursor-pointer block"
+          title="Open Sales Pipeline Kanban"
         >
-          <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0 group-hover:scale-105 transition-transform">
-              <Target className="w-6 h-6" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3.5">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-blue-600 to-sky-600 text-white flex items-center justify-center shadow-md sm:shadow-lg shadow-blue-500/25 shrink-0 group-hover:scale-110 transition-transform">
+              <Target className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <span className="text-xs font-bold text-slate-500 block leading-tight">Active CRM Pipeline</span>
-              <span className="text-2xl font-black text-slate-900 font-mono tracking-tight block mt-0.5">
+            <div className="min-w-0 flex-1">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-500 block leading-tight truncate group-hover:text-blue-600 transition-colors">Active CRM Pipeline</span>
+              <span className="text-base sm:text-2xl font-black text-slate-900 font-mono tracking-tight block mt-0.5 truncate">
                 ₹{(crmStats?.pipeline_value || 2840000).toLocaleString('en-IN')}
               </span>
-              <span className="inline-flex items-center text-xs font-bold text-emerald-600 mt-0.5">
-                <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" /> {crmStats?.total_leads || 6} Active Deals
+              <span className="inline-flex items-center text-[10px] sm:text-xs font-bold text-emerald-600 mt-0.5 truncate max-w-full">
+                <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-0.5 shrink-0" /> {crmStats?.total_leads || 6} Active Deals
               </span>
             </div>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Sales Pipeline Kanban</span>
-            <ArrowRight className="w-3.5 h-3.5 text-blue-600 group-hover:translate-x-1 transition-transform" />
+          <div className="mt-2.5 sm:mt-3 pt-2 sm:pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500 group-hover:text-blue-600 transition-colors font-semibold">
+            <span className="truncate mr-1">Sales Pipeline Kanban</span>
+            <ArrowRight className="w-3.5 h-3.5 text-blue-600 group-hover:translate-x-1.5 transition-transform shrink-0" />
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* 4. 4 DIFFERENT DISTINCT GRAPHS FOR CORE ERP PILLARS */}

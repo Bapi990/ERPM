@@ -158,23 +158,27 @@ export const RealtimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Dispatch global event for AppShell & pages
     window.dispatchEvent(new CustomEvent('odias_realtime_notification', { detail: event }));
 
-    // Notify registered subscribers
-    const listeners = subscribersRef.current.get(type);
-    if (listeners) {
-      listeners.forEach((cb) => {
-        try {
-          cb(event);
-        } catch (e) {
-          console.error('Subscriber callback error:', e);
-        }
-      });
-    }
+    // Notify registered subscribers (exact match, prefix/wildcard match, and global '*')
+    subscribersRef.current.forEach((listeners, pattern) => {
+      let matches = false;
+      if (pattern === '*' || pattern === type) {
+        matches = true;
+      } else if (pattern.endsWith('*') && type.startsWith(pattern.slice(0, -1))) {
+        matches = true;
+      } else if (pattern.endsWith(':*') && type.startsWith(pattern.slice(0, -2))) {
+        matches = true;
+      }
 
-    // Also notify wildcard listeners
-    const allListeners = subscribersRef.current.get('*');
-    if (allListeners) {
-      allListeners.forEach((cb) => cb(event));
-    }
+      if (matches) {
+        listeners.forEach((cb) => {
+          try {
+            cb(event);
+          } catch (e) {
+            console.error('Subscriber callback error:', e);
+          }
+        });
+      }
+    });
   }, [isTargetedToUser, user]);
 
   const subscribe = useCallback((eventType: string, callback: (event: RealtimeEvent) => void) => {
@@ -230,7 +234,7 @@ export const RealtimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } catch (err) {
         if (isMounted) setIsConnected(false);
       }
-    }, 6000);
+    }, 25000);
 
     return () => {
       isMounted = false;

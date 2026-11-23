@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, LayoutDashboard, Users, CalendarCheck, CalendarDays,
@@ -60,6 +61,19 @@ export const AppShell: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [navSearch, setNavSearch] = useState('');
   const [rbacRevision, setRbacRevision] = useState(0);
+
+  // Screen size detection for robust mobile overlay rendering
+  const [isMobileScreen, setIsMobileScreen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileScreen(window.innerWidth < 640);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // User Work Status ('online' | 'busy' | 'wfh' | 'away')
   const [userWorkStatus, setUserWorkStatus] = useState<'online' | 'busy' | 'wfh' | 'away'>(() => {
@@ -772,7 +786,7 @@ export const AppShell: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex bg-[#f8fafc] font-sans antialiased text-slate-900 select-none">
+    <div className="h-screen w-screen overflow-hidden flex bg-[#f8fafc] font-sans antialiased text-slate-900">
       {/* 1. LEFT SIDEBAR: Full Height (h-screen) with Gorgeous Deep Executive Slate Palette */}
       <aside
         className={`${
@@ -1019,11 +1033,13 @@ export const AppShell: React.FC = () => {
                 )}
               </button>
 
-              {notificationsOpen && (
-                <div className="absolute right-0 mt-2 w-88 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs font-black text-slate-900 tracking-tight uppercase">Live Activity Center</span>
+              {/* DESKTOP NOTIFICATIONS DROPDOWN (ONLY on non-mobile screens) */}
+              {notificationsOpen && !isMobileScreen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200/90 py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center space-x-1.5">
+                      <Bell className="w-3.5 h-3.5 text-[#1877f2]" />
+                      <span className="text-xs font-black text-slate-900 tracking-tight uppercase">Live Notifications</span>
                       {unreadCount > 0 && (
                         <span className="px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 text-[10px] font-bold border border-rose-200">
                           {unreadCount} new
@@ -1093,6 +1109,101 @@ export const AppShell: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* MOBILE NOTIFICATIONS PORTAL (ONLY on mobile screens - Centered with Backdrop & Close Button) */}
+            {notificationsOpen && isMobileScreen && typeof document !== 'undefined' && createPortal(
+              <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-3">
+                {/* Backdrop */}
+                <div
+                  className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs -z-10 animate-in fade-in duration-150"
+                  onClick={() => setNotificationsOpen(false)}
+                />
+
+                {/* Centered Compact Card */}
+                <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200/90 py-2 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center space-x-1.5">
+                      <Bell className="w-3.5 h-3.5 text-[#1877f2]" />
+                      <span className="text-xs font-black text-slate-900 tracking-tight uppercase">Live Notifications</span>
+                      {unreadCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 text-[10px] font-bold border border-rose-200">
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllRead}
+                          className="text-[11px] text-[#1877f2] hover:underline font-bold cursor-pointer"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setNotificationsOpen(false)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                        title="Close"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                    {notifications.length === 0 ? (
+                      <div className="p-5 text-center text-xs text-slate-400">
+                        <Bell className="w-6 h-6 mx-auto mb-1 text-slate-300 stroke-1" />
+                        No active notifications
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => {
+                            if (n.link) {
+                              navigate(n.link);
+                              setNotificationsOpen(false);
+                            }
+                            setNotifications((prev) =>
+                              prev.map((item) => (item.id === n.id ? { ...item, is_read: true } : item))
+                            );
+                            setUnreadCount((prev) => Math.max(0, prev - (n.is_read ? 0 : 1)));
+                            try {
+                              const userKey = `odias_user_notifications_${user?.email || 'default'}`;
+                              const localList: NotificationItem[] = JSON.parse(localStorage.getItem(userKey) || '[]');
+                              localStorage.setItem(userKey, JSON.stringify(localList.map((item) => item.id === n.id ? { ...item, is_read: true } : item)));
+                            } catch (e) {}
+                          }}
+                          className={`p-3 text-xs transition-colors cursor-pointer hover:bg-blue-50/60 ${
+                            n.is_read ? 'bg-white text-slate-600' : 'bg-blue-50/40 text-slate-900 border-l-3 border-[#1877f2]'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-bold text-slate-900 leading-tight">{n.title}</p>
+                            {!n.is_read && (
+                              <span className="w-2 h-2 rounded-full bg-[#1877f2] shrink-0 mt-1" />
+                            )}
+                          </div>
+                          <p className="text-slate-500 text-[11px] mt-1 leading-snug">{n.message}</p>
+                          <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100/60">
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {formatTime(n.created_at, { includeSeconds: true })}
+                            </span>
+                            {n.link && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] text-[#1877f2] font-black hover:underline">
+                                <span>Open</span>
+                                <ArrowRight className="w-2.5 h-2.5" />
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )}
 
 
             {/* User Profile Container & Dropdown */}
@@ -1275,7 +1386,7 @@ export const AppShell: React.FC = () => {
         )}
 
         {/* Main Content Area with INDEPENDENT SCROLLING (Light Soft Background) */}
-        <main className="flex-1 h-full overflow-y-auto overscroll-contain bg-[#f8fafc] text-slate-900 p-4 md:p-6 lg:p-7 w-full">
+        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden overscroll-contain bg-[#f8fafc] text-slate-900 p-3 sm:p-4 md:p-6 lg:p-7 w-full max-w-full min-w-0">
           <Outlet />
         </main>
       </div>

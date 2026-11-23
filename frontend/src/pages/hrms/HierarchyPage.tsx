@@ -95,10 +95,16 @@ export const HierarchyPage: React.FC = () => {
   // Initial fetch and WebSocket subscriptions
   useEffect(() => {
     loadRealEmployees();
-    const unsub = subscribe('employee.*', () => {
-      loadRealEmployees();
-    });
-    return () => unsub();
+    const unsub1 = subscribe('employee_*', () => loadRealEmployees());
+    const unsub2 = subscribe('employee.*', () => loadRealEmployees());
+    const unsub3 = subscribe('department:*', () => loadRealEmployees());
+    const unsub4 = subscribe('designation:*', () => loadRealEmployees());
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+      unsub4();
+    };
   }, []);
 
   const loadRealEmployees = async () => {

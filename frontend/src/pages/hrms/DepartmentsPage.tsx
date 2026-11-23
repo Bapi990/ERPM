@@ -138,18 +138,27 @@ export const DepartmentsPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [deptRes, desigRes, branchRes] = await Promise.all([
+      const [deptRes, desigRes, branchRes, empRes] = await Promise.all([
         api.getDepartments().catch(() => ({ results: [] })),
         api.getDesignations().catch(() => ({ results: [] })),
         api.getOrgBranches().catch(() => ({ results: [] })),
+        api.getEmployees().catch(() => ({ results: [] })),
       ]);
 
-      const depts = deptRes?.results || (Array.isArray(deptRes) ? deptRes : []);
-      const desigs = desigRes?.results || (Array.isArray(desigRes) ? desigRes : []);
-      const brs = branchRes?.results || (Array.isArray(branchRes) ? branchRes : []);
+      const emps: any[] = empRes?.results || (Array.isArray(empRes) ? empRes : empRes?.data?.results || empRes?.data || []);
+      const rawDepts = deptRes?.results || (Array.isArray(deptRes) ? deptRes : deptRes?.data?.results || deptRes?.data || []);
+      const desigs = desigRes?.results || (Array.isArray(desigRes) ? desigRes : desigRes?.data?.results || desigRes?.data || []);
+      const brs = branchRes?.results || (Array.isArray(branchRes) ? branchRes : branchRes?.data?.results || branchRes?.data || []);
 
-      // If backend has items, use them; otherwise seamlessly use enterprise defaults so counts are never 0
-      setDepartments(depts.length > 0 ? depts : DEFAULT_DEPARTMENTS);
+      const mappedDepts = (rawDepts.length > 0 ? rawDepts : DEFAULT_DEPARTMENTS).map((d: any) => {
+        const liveCount = emps.filter((e) => (e.department === d.id || e.department_name?.toLowerCase() === d.name?.toLowerCase())).length;
+        return {
+          ...d,
+          employee_count: liveCount > 0 ? liveCount : (d.employee_count || 0),
+        };
+      });
+
+      setDepartments(mappedDepts);
       setDesignations(desigs);
       setBranches(brs.length > 0 ? brs : DEFAULT_BRANCHES);
     } catch (err) {
@@ -164,9 +173,11 @@ export const DepartmentsPage: React.FC = () => {
   useEffect(() => {
     loadData();
 
-    const unsubDept = subscribe('department:updated', () => loadData());
+    const unsubDept = subscribe('department:*', () => loadData());
+    const unsubEmp = subscribe('employee_*', () => loadData());
     return () => {
       unsubDept?.();
+      unsubEmp?.();
     };
   }, []);
 
@@ -343,62 +354,62 @@ export const DepartmentsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Clean High-Contrast Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-blue-300 hover:shadow-sm transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Business Units</span>
-            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-              <Building2 className="w-4 h-4" />
+      {/* 4 Clean High-Contrast Stat Cards (Responsive 2 per row on mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white border border-slate-200/90 p-3.5 sm:p-5 rounded-2xl shadow-xs hover:border-blue-300 hover:shadow-sm transition flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Business Units</span>
+            <div className="p-2 sm:p-2.5 bg-blue-50 text-blue-600 rounded-xl shrink-0">
+              <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-slate-900">{departments.length}</span>
-            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Active</span>
+          <div className="mt-2 sm:mt-3 flex items-baseline space-x-1.5 sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-slate-900">{departments.length}</span>
+            <span className="text-[10px] sm:text-xs font-semibold text-emerald-600 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md">Active</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Operational enterprise departments</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1 truncate">Operational enterprise departments</p>
         </div>
 
-        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-emerald-300 hover:shadow-sm transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Operating Campuses</span>
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-              <MapPin className="w-4 h-4" />
+        <div className="bg-white border border-slate-200/90 p-3.5 sm:p-5 rounded-2xl shadow-xs hover:border-emerald-300 hover:shadow-sm transition flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Campuses</span>
+            <div className="p-2 sm:p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-slate-900">{branches.length}</span>
-            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Branches</span>
+          <div className="mt-2 sm:mt-3 flex items-baseline space-x-1.5 sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-slate-900">{branches.length}</span>
+            <span className="text-[10px] sm:text-xs font-semibold text-emerald-600 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-md">Branches</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Regional operational offices & HQ</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1 truncate">Regional operational offices & HQ</p>
         </div>
 
-        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-purple-300 hover:shadow-sm transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mapped Roles</span>
-            <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
-              <Briefcase className="w-4 h-4" />
+        <div className="bg-white border border-slate-200/90 p-3.5 sm:p-5 rounded-2xl shadow-xs hover:border-purple-300 hover:shadow-sm transition flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Mapped Roles</span>
+            <div className="p-2 sm:p-2.5 bg-purple-50 text-purple-600 rounded-xl shrink-0">
+              <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-slate-900">{designations.length || 14}</span>
-            <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md">Titles</span>
+          <div className="mt-2 sm:mt-3 flex items-baseline space-x-1.5 sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-slate-900">{designations.length || 14}</span>
+            <span className="text-[10px] sm:text-xs font-semibold text-purple-600 bg-purple-50 px-1.5 sm:px-2 py-0.5 rounded-md">Titles</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Job roles assigned across units</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1 truncate">Job roles assigned across units</p>
         </div>
 
-        <div className="bg-white border border-slate-200/90 p-5 rounded-2xl shadow-xs hover:border-amber-300 hover:shadow-sm transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Workforce Headcount</span>
-            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
-              <Users className="w-4 h-4" />
+        <div className="bg-white border border-slate-200/90 p-3.5 sm:p-5 rounded-2xl shadow-xs hover:border-amber-300 hover:shadow-sm transition flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Headcount</span>
+            <div className="p-2 sm:p-2.5 bg-amber-50 text-amber-600 rounded-xl shrink-0">
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline space-x-2">
-            <span className="text-3xl font-black text-slate-900">{totalEmployeesCount || 78}</span>
-            <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">Staff</span>
+          <div className="mt-2 sm:mt-3 flex items-baseline space-x-1.5 sm:space-x-2">
+            <span className="text-xl sm:text-3xl font-black text-slate-900">{totalEmployeesCount || 78}</span>
+            <span className="text-[10px] sm:text-xs font-semibold text-amber-600 bg-amber-50 px-1.5 sm:px-2 py-0.5 rounded-md">Staff</span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">Total mapped employees in units</p>
+          <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1 truncate">Total mapped employees in units</p>
         </div>
       </div>
 

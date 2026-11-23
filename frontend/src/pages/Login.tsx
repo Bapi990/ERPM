@@ -43,7 +43,7 @@ export const Login: React.FC = () => {
     setLoading(true);
     try {
       const authEmail = usernameOrEmail.trim() || 'superadmin12@gmail.com';
-      const authPass = password.trim() || '123456789';
+      const authPass = password.trim() || 'Password@123';
       await login(authEmail, authPass);
       navigate('/app/dashboard');
     } catch (err: any) {
@@ -81,7 +81,7 @@ export const Login: React.FC = () => {
     setLoading(true);
     try {
       const targetEmail = otpTarget.includes('@') ? otpTarget.trim() : 'superadmin12@gmail.com';
-      await login(targetEmail, '123456789');
+      await login(targetEmail, 'Password@123');
       navigate('/app/dashboard');
     } catch (err: any) {
       setError(err.message || 'OTP verification failed. Please try again.');
@@ -404,7 +404,7 @@ export const Login: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setUsernameOrEmail('superadmin12@gmail.com');
-                    setPassword('123456789');
+                    setPassword('Password@123');
                     setError(null);
                   }}
                   className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors cursor-pointer"

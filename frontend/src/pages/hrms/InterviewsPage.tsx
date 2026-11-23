@@ -51,11 +51,11 @@ export const InterviewsPage: React.FC = () => {
     setLoading(true);
     try {
       const [intRes, candRes] = await Promise.all([
-        api.getInterviews(),
-        api.getJobApplications(),
+        api.getInterviews().catch(() => ({ results: [] })),
+        api.getJobApplications().catch(() => ({ results: [] })),
       ]);
-      setInterviews(intRes?.data?.results || intRes?.data || []);
-      setCandidates(candRes?.data?.results || candRes?.data || []);
+      setInterviews(intRes?.results || (Array.isArray(intRes) ? intRes : intRes?.data?.results || intRes?.data || []));
+      setCandidates(candRes?.results || (Array.isArray(candRes) ? candRes : candRes?.data?.results || candRes?.data || []));
     } catch (err) {
       console.error('Failed to load interview schedules', err);
     } finally {
@@ -159,50 +159,50 @@ export const InterviewsPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Scheduled Sessions</p>
-            <p className="text-2xl font-bold text-blue-600 mt-1">{scheduledCount} Upcoming</p>
-            <p className="text-xs text-primary-600 mt-1">Calendar confirmed</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Scheduled Sessions</p>
+            <p className="text-base sm:text-2xl font-bold text-blue-600 mt-1 truncate">{scheduledCount} Upcoming</p>
+            <p className="text-[11px] sm:text-xs text-primary-600 mt-0.5 sm:mt-1 truncate">Calendar confirmed</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <Calendar size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <Calendar className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Completed Rounds</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{completedCount}</p>
-            <p className="text-xs text-emerald-600 mt-1">Scorecards filed</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Completed Rounds</p>
+            <p className="text-base sm:text-2xl font-bold text-emerald-600 mt-1 truncate">{completedCount}</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 truncate">Scorecards filed</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <CheckCircle2 size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Average Candidate Score</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">{avgRating} / 5.0</p>
-            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-              <Star size={12} className="fill-amber-500" /> High caliber threshold
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Average Candidate Score</p>
+            <p className="text-base sm:text-2xl font-bold text-amber-600 mt-1 truncate">{avgRating} / 5.0</p>
+            <p className="text-[11px] sm:text-xs text-amber-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <Star size={12} className="fill-amber-500 shrink-0" /> High caliber threshold
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <Star size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+            <Star className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Virtual Video Meets</p>
-            <p className="text-2xl font-bold text-purple-600 mt-1">{virtualMeetsCount}</p>
-            <p className="text-xs text-purple-600 mt-1">Remote screening</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Virtual Video Meets</p>
+            <p className="text-base sm:text-2xl font-bold text-purple-600 mt-1 truncate">{virtualMeetsCount}</p>
+            <p className="text-[11px] sm:text-xs text-purple-600 mt-0.5 sm:mt-1 truncate">Remote screening</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-            <Video size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
+            <Video className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>

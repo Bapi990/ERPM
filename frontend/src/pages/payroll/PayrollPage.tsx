@@ -1361,73 +1361,73 @@ export const PayrollPage: React.FC = () => {
       {/* ========================================================= */}
       {activeTab === 'dashboard' && (
         <div className="space-y-6">
-          {/* KPI Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500">Gross Monthly Outflow</span>
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-                  <DollarSign className="w-4 h-4" />
+          {/* KPI Summary Cards (Responsive 2 per row on mobile) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[10px] sm:text-xs font-bold text-slate-500 truncate">Gross Monthly Outflow</span>
+                <div className="p-1.5 sm:p-2 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
+                  <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
               </div>
-              <div className="mt-2">
-                <span className="text-2xl font-black text-slate-900 font-mono">
+              <div className="mt-1.5 sm:mt-2">
+                <span className="text-base sm:text-2xl font-black text-slate-900 font-mono block truncate">
                   ₹{Number(dashboardStats?.latest_payout || 707850).toLocaleString('en-IN')}
                 </span>
-                <span className="text-[11px] text-emerald-600 block mt-0.5 flex items-center font-semibold">
-                  <TrendingUp className="w-3.5 h-3.5 mr-1" />
-                  100% Policy-Protected
+                <span className="text-[10px] sm:text-[11px] text-emerald-600 block mt-0.5 flex items-center font-semibold truncate">
+                  <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-0.5 sm:mr-1 shrink-0" />
+                  Policy-Protected
                 </span>
               </div>
             </div>
 
-            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500">Statutory Deductions (PF/PT/ESI)</span>
-                <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
-                  <Shield className="w-4 h-4" />
+            <div className="p-3 sm:p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[10px] sm:text-xs font-bold text-slate-500 truncate">Statutory (PF/PT/ESI)</span>
+                <div className="p-1.5 sm:p-2 bg-rose-50 text-rose-600 rounded-xl shrink-0">
+                  <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
               </div>
-              <div className="mt-2">
-                <span className="text-2xl font-black text-slate-900 font-mono">
+              <div className="mt-1.5 sm:mt-2">
+                <span className="text-base sm:text-2xl font-black text-slate-900 font-mono block truncate">
                   ₹{Number(dashboardStats?.total_deductions || 42800).toLocaleString('en-IN')}
                 </span>
-                <span className="text-[11px] text-slate-400 block mt-0.5">
-                  EPFO, ESIC & PT Remittances
+                <span className="text-[10px] sm:text-[11px] text-slate-400 block mt-0.5 truncate">
+                  EPFO, ESIC & PT
                 </span>
               </div>
             </div>
 
-            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500">Active Headcount in Payroll</span>
-                <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
-                  <User className="w-4 h-4" />
+            <div className="p-3 sm:p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[10px] sm:text-xs font-bold text-slate-500 truncate">Payroll Headcount</span>
+                <div className="p-1.5 sm:p-2 bg-blue-50 text-blue-600 rounded-xl shrink-0">
+                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
               </div>
-              <div className="mt-2">
-                <span className="text-2xl font-black text-slate-900 font-mono">
+              <div className="mt-1.5 sm:mt-2">
+                <span className="text-base sm:text-2xl font-black text-slate-900 font-mono block truncate">
                   {salaryStructures.length || 7} Staff
                 </span>
-                <span className="text-[11px] text-blue-600 block mt-0.5 font-semibold">
+                <span className="text-[10px] sm:text-[11px] text-blue-600 block mt-0.5 font-semibold truncate">
                   All CTC structures active
                 </span>
               </div>
             </div>
 
-            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500">Active Processing Period</span>
-                <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
-                  <Calendar className="w-4 h-4" />
+            <div className="p-3 sm:p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between hover:border-emerald-300 transition-all">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[10px] sm:text-xs font-bold text-slate-500 truncate">Processing Period</span>
+                <div className="p-1.5 sm:p-2 bg-purple-50 text-purple-600 rounded-xl shrink-0">
+                  <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
               </div>
-              <div className="mt-2">
-                <span className="text-lg font-black text-slate-900 block truncate">
+              <div className="mt-1.5 sm:mt-2">
+                <span className="text-sm sm:text-lg font-black text-slate-900 block truncate">
                   {periods[0]?.name || 'November 2026'}
                 </span>
-                <span className="text-[11px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md font-bold uppercase inline-block mt-0.5">
-                  Status: {periods[0]?.status || 'Review Queue'}
+                <span className="text-[10px] sm:text-[11px] text-purple-700 bg-purple-50 px-1.5 sm:px-2 py-0.5 rounded-md font-bold uppercase inline-block mt-0.5 truncate">
+                  Status: {periods[0]?.status || 'Review'}
                 </span>
               </div>
             </div>

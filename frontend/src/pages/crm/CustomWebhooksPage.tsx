@@ -473,29 +473,29 @@ export const CustomWebhooksPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full min-w-0">
       {/* =========================================================================
           VIEW MODE 1: OUTBOUND WEBHOOKS LIST (Matches Screenshot 2)
           ========================================================================= */}
       {viewMode === 'list' && (
         <>
           {/* Breadcrumbs & Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
-            <div>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5 min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center space-x-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
                 <span>CRM</span>
                 <span>/</span>
                 <span className="text-cyan-600 dark:text-cyan-400">Custom Webhooks</span>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className="p-2.5 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-500/20">
-                  <Radio className="w-6 h-6 animate-pulse" />
+              <div className="flex items-start sm:items-center space-x-3 min-w-0">
+                <div className="p-2.5 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-500/20 shrink-0">
+                  <Radio className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
                     Outbound Custom Webhooks
                   </h1>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 sm:line-clamp-none">
                     Dispatch real-time CRM events to Zapier, Make, Slack, ERPs, or external webhook endpoints.
                   </p>
                 </div>
@@ -503,7 +503,7 @@ export const CustomWebhooksPage: React.FC = () => {
             </div>
 
             {/* Top Action Buttons (Delivery Logs, Inbound API & Channels, + Create Webhook) */}
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={openDeliveryLogs}
@@ -542,78 +542,78 @@ export const CustomWebhooksPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 4 Top Metric Cards (TOTAL WEBHOOKS, DISPATCHES, SUCCESSFUL DELIVERIES, ENGINE STATUS) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 4 Top Metric Cards (TOTAL WEBHOOKS, DISPATCHES, SUCCESSFUL DELIVERIES, ENGINE STATUS - Responsive 2 per row on mobile) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Card 1: Total Webhooks */}
-            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <div className="p-3.5 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
                   Total Webhooks
                 </p>
-                <p className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+                <p className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-0.5 sm:mt-1 truncate">
                   {stats.total}
                 </p>
-                <div className="flex items-center space-x-1.5 mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                <div className="flex items-center space-x-1.5 mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-semibold truncate">
+                  <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
                   <span>{stats.active} active</span>
                 </div>
               </div>
-              <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50">
-                <Globe className="w-6 h-6" />
+              <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50 shrink-0">
+                <Globe className="w-4 h-4 sm:w-6 sm:h-6" />
               </div>
             </div>
 
             {/* Card 2: Dispatches */}
-            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <div className="p-3.5 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
                   Dispatches
                 </p>
-                <p className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+                <p className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-0.5 sm:mt-1 truncate">
                   {stats.dispatches}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1 font-medium truncate">
                   All-time triggered
                 </p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200/50 dark:border-cyan-800/50">
-                <Send className="w-6 h-6" />
+              <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200/50 dark:border-cyan-800/50 shrink-0">
+                <Send className="w-4 h-4 sm:w-6 sm:h-6" />
               </div>
             </div>
 
             {/* Card 3: Successful Deliveries */}
-            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <div className="p-3.5 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
                   Successful Deliveries
                 </p>
-                <p className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+                <p className="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-0.5 sm:mt-1 truncate">
                   {stats.successful}
                 </p>
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-semibold">
+                <p className="text-[11px] sm:text-xs text-emerald-600 dark:text-emerald-400 mt-0.5 sm:mt-1 font-semibold truncate">
                   {stats.rate}% Success rate
                 </p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50">
-                <CheckCircle2 className="w-6 h-6" />
+              <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/50 shrink-0">
+                <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6" />
               </div>
             </div>
 
             {/* Card 4: Engine Status */}
-            <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <div className="p-3.5 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
                   Engine Status
                 </p>
-                <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
+                <p className="text-lg sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 sm:mt-1 truncate">
                   Healthy
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1 font-medium truncate">
                   Real-time dispatcher
                 </p>
               </div>
-              <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/50">
-                <HeartPulse className="w-6 h-6" />
+              <div className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/50 shrink-0">
+                <HeartPulse className="w-4 h-4 sm:w-6 sm:h-6" />
               </div>
             </div>
           </div>

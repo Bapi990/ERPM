@@ -52,11 +52,11 @@ export const GrievancesPage: React.FC = () => {
     setLoading(true);
     try {
       const [gRes, empRes] = await Promise.all([
-        api.getGrievances(),
-        api.getEmployees(),
+        api.getGrievances().catch(() => ({ results: [] })),
+        api.getEmployees().catch(() => ({ results: [] })),
       ]);
-      setGrievances(gRes?.data?.results || gRes?.data || []);
-      setEmployees(empRes?.data?.results || empRes?.data || []);
+      setGrievances(gRes?.results || (Array.isArray(gRes) ? gRes : gRes?.data?.results || gRes?.data || []));
+      setEmployees(empRes?.results || (Array.isArray(empRes) ? empRes : empRes?.data?.results || empRes?.data || []));
     } catch (err) {
       console.error('Failed to load grievances', err);
     } finally {
@@ -66,10 +66,12 @@ export const GrievancesPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const unsub = subscribe('grievance_*', () => {
-      loadData();
-    });
-    return () => unsub();
+    const unsub1 = subscribe('grievance_*', () => loadData());
+    const unsub2 = subscribe('employee_*', () => loadData());
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   const handleFileGrievance = async (e: React.FormEvent) => {
@@ -167,54 +169,54 @@ export const GrievancesPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Filed Cases</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{totalCount}</p>
-            <p className="text-xs text-primary-600 mt-1">Confidential records</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Filed Cases</p>
+            <p className="text-base sm:text-2xl font-bold text-gray-900 mt-1 truncate">{totalCount}</p>
+            <p className="text-[11px] sm:text-xs text-primary-600 mt-0.5 sm:mt-1 truncate">Confidential records</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <HelpCircle size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <HelpCircle className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">New & Open</p>
-            <p className="text-2xl font-bold text-rose-600 mt-1">{openCount}</p>
-            <p className="text-xs text-rose-600 mt-1 flex items-center gap-1">
-              <AlertTriangle size={12} /> Pending intake triage
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">New & Open</p>
+            <p className="text-base sm:text-2xl font-bold text-rose-600 mt-1 truncate">{openCount}</p>
+            <p className="text-[11px] sm:text-xs text-rose-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <AlertTriangle size={12} className="shrink-0" /> Pending intake triage
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-            <AlertTriangle size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold shrink-0">
+            <AlertTriangle className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">In Review / Hearing</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">{inReviewCount}</p>
-            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-              <Clock size={12} /> Under formal probe
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">In Review / Hearing</p>
+            <p className="text-base sm:text-2xl font-bold text-amber-600 mt-1 truncate">{inReviewCount}</p>
+            <p className="text-[11px] sm:text-xs text-amber-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <Clock size={12} className="shrink-0" /> Under formal probe
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <Clock size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+            <Clock className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Resolved & Closed</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{resolvedCount}</p>
-            <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-              <ShieldCheck size={12} /> Redressed successfully
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Resolved & Closed</p>
+            <p className="text-base sm:text-2xl font-bold text-emerald-600 mt-1 truncate">{resolvedCount}</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <ShieldCheck size={12} className="shrink-0" /> Redressed successfully
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <ShieldCheck size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <ShieldCheck className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>

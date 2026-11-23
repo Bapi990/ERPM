@@ -55,11 +55,11 @@ export const ShiftsPage: React.FC = () => {
     setLoading(true);
     try {
       const [shiftsRes, empsRes] = await Promise.all([
-        api.getShifts(),
-        api.getEmployees(),
+        api.getShifts().catch(() => ({ results: [] })),
+        api.getEmployees().catch(() => ({ results: [] })),
       ]);
-      setShifts(shiftsRes?.data?.results || shiftsRes?.data || []);
-      setEmployees(empsRes?.data?.results || empsRes?.data || []);
+      setShifts(shiftsRes?.results || (Array.isArray(shiftsRes) ? shiftsRes : shiftsRes?.data?.results || shiftsRes?.data || []));
+      setEmployees(empsRes?.results || (Array.isArray(empsRes) ? empsRes : empsRes?.data?.results || empsRes?.data || []));
     } catch (err) {
       console.error('Failed to load shift and roster data', err);
     } finally {
@@ -69,10 +69,12 @@ export const ShiftsPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const unsub = subscribe('shift_*', () => {
-      loadData();
-    });
-    return () => unsub();
+    const unsub1 = subscribe('shift_*', () => loadData());
+    const unsub2 = subscribe('employee_*', () => loadData());
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   const handleCreateShift = async (e: React.FormEvent) => {
@@ -172,56 +174,56 @@ export const ShiftsPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Shifts</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{totalShifts}</p>
-            <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-              <CheckCircle2 size={12} /> Standard & Rotational
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Shifts</p>
+            <p className="text-base sm:text-2xl font-bold text-gray-900 mt-1 truncate">{totalShifts}</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <CheckCircle2 size={12} className="shrink-0" /> Standard & Rotational
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <Clock size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <Clock className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Rostered Staff</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{activeEmployees}</p>
-            <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-              <Users size={12} /> Live across all shifts
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Rostered Staff</p>
+            <p className="text-base sm:text-2xl font-bold text-gray-900 mt-1 truncate">{activeEmployees}</p>
+            <p className="text-[11px] sm:text-xs text-blue-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <Users size={12} className="shrink-0" /> Live across all shifts
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-            <Users size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
+            <Users className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Night Shift Coverage</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{nightShiftsCount} Active</p>
-            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-              <Moon size={12} /> 24x7 Operations
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Night Shift Coverage</p>
+            <p className="text-base sm:text-2xl font-bold text-gray-900 mt-1 truncate">{nightShiftsCount} Active</p>
+            <p className="text-[11px] sm:text-xs text-amber-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <Moon size={12} className="shrink-0" /> 24x7 Operations
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <Moon size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+            <Moon className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Avg Shift Length</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{avgShiftHours} hrs</p>
-            <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-              <ShieldCheck size={12} /> Compliant with labor laws
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Avg Shift Length</p>
+            <p className="text-base sm:text-2xl font-bold text-gray-900 mt-1 truncate">{avgShiftHours} hrs</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <ShieldCheck size={12} className="shrink-0" /> Compliant with labor laws
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <Sun size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <Sun className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>

@@ -59,11 +59,11 @@ export const KycDocumentsPage: React.FC = () => {
     setLoading(true);
     try {
       const [docRes, empRes] = await Promise.all([
-        api.getDocuments(),
-        api.getEmployees(),
+        api.getDocuments().catch(() => ({ results: [] })),
+        api.getEmployees().catch(() => ({ results: [] })),
       ]);
-      const docs = docRes?.data?.results || docRes?.data || [];
-      const emps = empRes?.data?.results || empRes?.data || [];
+      const docs = docRes?.results || (Array.isArray(docRes) ? docRes : docRes?.data?.results || docRes?.data || []);
+      const emps = empRes?.results || (Array.isArray(empRes) ? empRes : empRes?.data?.results || empRes?.data || []);
       setEmployees(emps);
 
       // Enhance docs with employee details if missing
@@ -86,10 +86,12 @@ export const KycDocumentsPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const unsub = subscribe('doc_*', () => {
-      loadData();
-    });
-    return () => unsub();
+    const unsub1 = subscribe('doc_*', () => loadData());
+    const unsub2 = subscribe('employee_*', () => loadData());
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
   const handleUploadDoc = async (e: React.FormEvent) => {
@@ -179,54 +181,54 @@ export const KycDocumentsPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Vault Records</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{totalCount}</p>
-            <p className="text-xs text-primary-600 mt-1">Encrypted on server</p>
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Vault Records</p>
+            <p className="text-base sm:text-2xl font-bold text-gray-900 mt-1 truncate">{totalCount}</p>
+            <p className="text-[11px] sm:text-xs text-primary-600 mt-0.5 sm:mt-1 truncate">Encrypted on server</p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <FileText size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <FileText className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Verified KYC</p>
-            <p className="text-2xl font-bold text-emerald-600 mt-1">{verifiedCount}</p>
-            <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
-              <CheckCircle2 size={12} /> Compliance cleared
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Verified KYC</p>
+            <p className="text-base sm:text-2xl font-bold text-emerald-600 mt-1 truncate">{verifiedCount}</p>
+            <p className="text-[11px] sm:text-xs text-emerald-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <CheckCircle2 size={12} className="shrink-0" /> Compliance cleared
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <ShieldCheck size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <ShieldCheck className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Verification Pending</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">{pendingCount}</p>
-            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-              <Clock size={12} /> Requires HR review
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Verification Pending</p>
+            <p className="text-base sm:text-2xl font-bold text-amber-600 mt-1 truncate">{pendingCount}</p>
+            <p className="text-[11px] sm:text-xs text-amber-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <Clock size={12} className="shrink-0" /> Requires HR review
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <Clock size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
+            <Clock className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Rejected / Resubmit</p>
-            <p className="text-2xl font-bold text-rose-600 mt-1">{rejectedCount}</p>
-            <p className="text-xs text-rose-600 mt-1 flex items-center gap-1">
-              <XCircle size={12} /> Flagged documents
+            <p className="text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Rejected / Resubmit</p>
+            <p className="text-base sm:text-2xl font-bold text-rose-600 mt-1 truncate">{rejectedCount}</p>
+            <p className="text-[11px] sm:text-xs text-rose-600 mt-0.5 sm:mt-1 flex items-center gap-1 truncate">
+              <XCircle size={12} className="shrink-0" /> Flagged documents
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-            <XCircle size={24} />
+          <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold shrink-0">
+            <XCircle className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
         </div>
       </div>
