@@ -16,6 +16,8 @@ class LeadStatusRemarkSerializer(serializers.ModelSerializer):
         fields = ['id', 'lead', 'old_status', 'new_status', 'remark', 'created_by', 'created_by_name', 'created_at']
 
 class LeadSerializer(serializers.ModelSerializer):
+    lead_id = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    source = serializers.CharField(max_length=50, required=False, allow_blank=True, default='website')
     assigned_name = serializers.CharField(source='assigned_to.get_full_name', read_only=True)
     remarks = LeadStatusRemarkSerializer(many=True, read_only=True)
     remarks_count = serializers.SerializerMethodField()
@@ -45,6 +47,7 @@ class ContactPersonSerializer(serializers.ModelSerializer):
         ]
 
 class CustomerSerializer(serializers.ModelSerializer):
+    customer_code = serializers.CharField(max_length=50, required=False, allow_blank=True)
     assigned_name = serializers.CharField(source='assigned_to.get_full_name', read_only=True)
     invoices_count = serializers.SerializerMethodField()
     contact_persons = ContactPersonSerializer(many=True, read_only=True)

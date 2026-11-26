@@ -219,11 +219,12 @@ export const RealtimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           list.forEach((n: any) => {
             if (!n.is_read && !seenNotificationIdsRef.current.has(n.id)) {
               seenNotificationIdsRef.current.add(n.id);
+              const evtType = n.link?.includes('/crm') ? 'lead_captured' : 'notification';
               emitEvent(
-                'notification',
+                evtType,
                 n.title,
                 n.message,
-                n.notification_type === 'action_required' ? 'warning' : 'info',
+                n.notification_type === 'action_required' ? 'warning' : n.notification_type === 'success' ? 'success' : 'info',
                 n.user_email || undefined,
                 undefined,
                 n.link
@@ -234,7 +235,7 @@ export const RealtimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       } catch (err) {
         if (isMounted) setIsConnected(false);
       }
-    }, 25000);
+    }, 15000);
 
     return () => {
       isMounted = false;
@@ -286,7 +287,13 @@ export const RealtimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 onClick={() => setLastEvent(null)}
                 className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-400 hover:text-blue-300 hover:underline"
               >
-                <span>View Task / Project</span>
+                <span>
+                  {lastEvent.link.includes('/crm')
+                    ? 'Open in CRM'
+                    : lastEvent.link.includes('/hrms')
+                    ? 'Open in HRMS'
+                    : 'View Task / Project'}
+                </span>
                 <ArrowRight className="w-3 h-3" />
               </a>
             </div>

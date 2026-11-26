@@ -12,8 +12,11 @@ import { api } from '../../api/client';
 import { useRealtime } from '../../context/RealtimeContext';
 import { Modal } from '../../components/common/Modal';
 import { generateCRMGuidePDF } from '../../utils/crmGuidePdfGenerator';
+import { getInboundWebhookUrl, getPublicApiOrigin } from '../../utils/webhookUrl';
 
 export const CRMConfigPage: React.FC = () => {
+  const liveWebhookUrl = getInboundWebhookUrl('/api/v1/crm/webhook/');
+  const liveApiOrigin = getPublicApiOrigin();
   const { emitEvent } = useRealtime();
   const [searchParams] = useSearchParams();
   const [channels, setChannels] = useState<any[]>([]);
@@ -212,8 +215,7 @@ export const CRMConfigPage: React.FC = () => {
   };
 
   const handleCopyWebhookUrl = () => {
-    const url = `${window.location.protocol}//${window.location.hostname}:8000/api/v1/crm/lead-channels/webhook/`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(liveWebhookUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -420,7 +422,7 @@ fetch("http://localhost:8000/api/v1/crm/lead-channels/webhook/", {
       };
 
       try {
-        const res = await fetch('http://localhost:8000/api/v1/crm/lead-channels/webhook/', {
+        const res = await fetch('${liveWebhookUrl}', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -483,11 +485,10 @@ fetch("http://localhost:8000/api/v1/crm/lead-channels/webhook/", {
               }, null, 2)
             },
             url: {
-              raw: "http://localhost:8000/api/v1/crm/lead-channels/webhook/",
-              protocol: "http",
-              host: ["localhost"],
-              port: "8000",
-              path: ["api", "v1", "crm", "lead-channels", "webhook", ""]
+              raw: `${liveWebhookUrl}`,
+              protocol: liveApiOrigin.startsWith('https') ? 'https' : 'http',
+              host: [liveApiOrigin.replace(/^https?:\/\//, '')],
+              path: ["api", "v1", "crm", "webhook", ""]
             }
           }
         },
@@ -499,10 +500,9 @@ fetch("http://localhost:8000/api/v1/crm/lead-channels/webhook/", {
               { key: "Authorization", value: "Bearer {{access_token}}" }
             ],
             url: {
-              raw: "http://localhost:8000/api/v1/crm/leads/",
-              protocol: "http",
-              host: ["localhost"],
-              port: "8000",
+              raw: `${liveApiOrigin}/api/v1/crm/leads/`,
+              protocol: liveApiOrigin.startsWith('https') ? 'https' : 'http',
+              host: [liveApiOrigin.replace(/^https?:\/\//, '')],
               path: ["api", "v1", "crm", "leads", ""]
             }
           }
@@ -516,10 +516,9 @@ fetch("http://localhost:8000/api/v1/crm/lead-channels/webhook/", {
               { key: "Content-Type", value: "application/json" }
             ],
             url: {
-              raw: "http://localhost:8000/api/v1/crm/leads/lead-001/convert/",
-              protocol: "http",
-              host: ["localhost"],
-              port: "8000",
+              raw: `${liveApiOrigin}/api/v1/crm/leads/lead-001/convert/`,
+              protocol: liveApiOrigin.startsWith('https') ? 'https' : 'http',
+              host: [liveApiOrigin.replace(/^https?:\/\//, '')],
               path: ["api", "v1", "crm", "leads", "lead-001", "convert", ""]
             }
           }
@@ -542,8 +541,7 @@ Aditya Heavy Engineering,Vikram Aditya,vikram.aditya@aditya-eng.com,+91 99887 76
     e.preventDefault();
     setSubmittingWebhook(true);
     try {
-      const webhookUrl = `${window.location.protocol}//${window.location.hostname}:8000/api/v1/crm/lead-channels/webhook/`;
-      const res = await fetch(webhookUrl, {
+      const res = await fetch('/api/v1/crm/webhook/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -876,7 +874,7 @@ Aditya Heavy Engineering,Vikram Aditya,vikram.aditya@aditya-eng.com,+91 99887 76
                 <input
                   type="text"
                   readOnly
-                  value={`${window.location.protocol}//${window.location.hostname}:8000/api/v1/crm/lead-channels/webhook/`}
+                  value={liveWebhookUrl}
                   className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-slate-800"
                 />
                 <button
@@ -903,7 +901,7 @@ Aditya Heavy Engineering,Vikram Aditya,vikram.aditya@aditya-eng.com,+91 99887 76
                 cURL Integration Sample
               </label>
               <div className="p-3.5 bg-slate-900 text-slate-200 font-mono text-[11px] rounded-xl overflow-x-auto leading-relaxed">
-                <pre>{`curl -X POST http://127.0.0.1:8000/api/v1/crm/lead-channels/webhook/ \\
+                <pre>{`curl -X POST ${liveWebhookUrl} \\
   -H "Content-Type: application/json" \\
   -H "X-Webhook-Secret: whsec_inbound_website_88190" \\
   -d '{
@@ -1349,15 +1347,15 @@ Aditya Heavy Engineering,Vikram Aditya,vikram.aditya@aditya-eng.com,+91 99887 76
                 onClick={() => {
                   let textToCopy = '';
                   if (selectedCodeTab === 'html') {
-                    textToCopy = `<form action="http://localhost:8000/api/v1/crm/lead-channels/webhook/" method="POST">\n  <input type="text" name="name" placeholder="Full Name" required />\n  <input type="email" name="email" placeholder="Email" required />\n  <input type="tel" name="phone" placeholder="Phone" required />\n  <input type="text" name="company_name" placeholder="Company" />\n  <input type="hidden" name="source" value="Website Contact Form" />\n  <button type="submit">Submit Request</button>\n</form>`;
+                    textToCopy = `<form action="${liveWebhookUrl}" method="POST">\n  <input type="text" name="name" placeholder="Full Name" required />\n  <input type="email" name="email" placeholder="Email" required />\n  <input type="tel" name="phone" placeholder="Phone" required />\n  <input type="text" name="company_name" placeholder="Company" />\n  <input type="hidden" name="source" value="Website Contact Form" />\n  <button type="submit">Submit Request</button>\n</form>`;
                   } else if (selectedCodeTab === 'curl') {
-                    textToCopy = `curl -X POST "http://localhost:8000/api/v1/crm/lead-channels/webhook/" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "name": "Rajesh Mohanty",\n    "email": "rajesh@kalingasteel.com",\n    "phone": "+91 9876543210",\n    "company_name": "Kalinga Steels & Power Ltd",\n    "source": "Website Contact Form",\n    "notes": "Interested in ERP Enterprise license"\n  }'`;
+                    textToCopy = `curl -X POST "${liveWebhookUrl}" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "name": "Rajesh Mohanty",\n    "email": "rajesh@kalingasteel.com",\n    "phone": "+91 9876543210",\n    "company_name": "Kalinga Steels & Power Ltd",\n    "source": "Website Contact Form",\n    "notes": "Interested in ERP Enterprise license"\n  }'`;
                   } else if (selectedCodeTab === 'js') {
-                    textToCopy = `fetch('http://localhost:8000/api/v1/crm/lead-channels/webhook/', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({\n    name: 'Rajesh Mohanty',\n    email: 'rajesh@kalingasteel.com',\n    phone: '+91 9876543210',\n    company_name: 'Kalinga Steels & Power Ltd',\n    source: 'Landing Page',\n    notes: 'Requested product demo'\n  })\n})\n.then(res => res.json())\n.then(data => console.log('Lead Captured:', data));`;
+                    textToCopy = `fetch('${liveWebhookUrl}', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({\n    name: 'Rajesh Mohanty',\n    email: 'rajesh@kalingasteel.com',\n    phone: '+91 9876543210',\n    company_name: 'Kalinga Steels & Power Ltd',\n    source: 'Landing Page',\n    notes: 'Requested product demo'\n  })\n})\n.then(res => res.json())\n.then(data => console.log('Lead Captured:', data));`;
                   } else if (selectedCodeTab === 'python') {
-                    textToCopy = `import requests\n\nurl = "http://localhost:8000/api/v1/crm/lead-channels/webhook/"\npayload = {\n    "name": "Rajesh Mohanty",\n    "email": "rajesh@kalingasteel.com",\n    "phone": "+91 9876543210",\n    "company_name": "Kalinga Steels & Power Ltd",\n    "source": "Python Backend API",\n    "notes": "Enterprise defense inquiry"\n}\nresponse = requests.post(url, json=payload)\nprint(response.json())`;
+                    textToCopy = `import requests\n\nurl = "${liveWebhookUrl}"\npayload = {\n    "name": "Rajesh Mohanty",\n    "email": "rajesh@kalingasteel.com",\n    "phone": "+91 9876543210",\n    "company_name": "Kalinga Steels & Power Ltd",\n    "source": "Python Backend API",\n    "notes": "Enterprise defense inquiry"\n}\nresponse = requests.post(url, json=payload)\nprint(response.json())`;
                   } else if (selectedCodeTab === 'php') {
-                    textToCopy = `<?php\n$url = "http://localhost:8000/api/v1/crm/lead-channels/webhook/";\n$data = [\n  "name" => $_POST["name"],\n  "email" => $_POST["email"],\n  "phone" => $_POST["phone"],\n  "company_name" => $_POST["company"],\n  "source" => "WordPress Contact Form"\n];\n\n$options = [\n  "http" => [\n    "header"  => "Content-type: application/json\\r\\n",\n    "method"  => "POST",\n    "content" => json_encode($data)\n  ]\n];\n$context  = stream_context_create($options);\n$result = file_get_contents($url, false, $context);\n?>`;
+                    textToCopy = `<?php\n$url = "${liveWebhookUrl}";\n$data = [\n  "name" => $_POST["name"],\n  "email" => $_POST["email"],\n  "phone" => $_POST["phone"],\n  "company_name" => $_POST["company"],\n  "source" => "WordPress Contact Form"\n];\n\n$options = [\n  "http" => [\n    "header"  => "Content-type: application/json\\r\\n",\n    "method"  => "POST",\n    "content" => json_encode($data)\n  ]\n];\n$context  = stream_context_create($options);\n$result = file_get_contents($url, false, $context);\n?>`;
                   }
 
                   navigator.clipboard.writeText(textToCopy);
@@ -1372,7 +1370,7 @@ Aditya Heavy Engineering,Vikram Aditya,vikram.aditya@aditya-eng.com,+91 99887 76
 
               <pre className="overflow-x-auto py-2 leading-relaxed text-emerald-300">
                 {selectedCodeTab === 'html' && `<!-- Odias ERP Inbound Webhook Contact Form -->
-<form action="http://localhost:8000/api/v1/crm/lead-channels/webhook/" method="POST">
+<form action="${liveWebhookUrl}" method="POST">
   <input type="text" name="name" placeholder="Full Name" required />
   <input type="email" name="email" placeholder="Email" required />
   <input type="tel" name="phone" placeholder="Phone" required />
@@ -1383,7 +1381,7 @@ Aditya Heavy Engineering,Vikram Aditya,vikram.aditya@aditya-eng.com,+91 99887 76
 </form>`}
 
                 {selectedCodeTab === 'curl' && `# Test Inbound Lead Webhook via cURL
-curl -X POST "http://localhost:8000/api/v1/crm/lead-channels/webhook/" \\
+curl -X POST "${liveWebhookUrl}" \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "Rajesh Mohanty",
@@ -1395,7 +1393,7 @@ curl -X POST "http://localhost:8000/api/v1/crm/lead-channels/webhook/" \\
   }'`}
 
                 {selectedCodeTab === 'js' && `// Modern JavaScript / TypeScript Fetch Example
-fetch('http://localhost:8000/api/v1/crm/lead-channels/webhook/', {
+fetch('${liveWebhookUrl}', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
@@ -1419,7 +1417,7 @@ fetch('http://localhost:8000/api/v1/crm/lead-channels/webhook/', {
                 {selectedCodeTab === 'python' && `# Python Requests Library
 import requests
 
-webhook_url = "http://localhost:8000/api/v1/crm/lead-channels/webhook/"
+webhook_url = "${liveWebhookUrl}"
 
 lead_data = {
     "name": "Rajesh Mohanty",
@@ -1436,7 +1434,7 @@ print("Response JSON:", response.json())`}
 
                 {selectedCodeTab === 'php' && `<?php
 // WordPress / PHP Contact Form Handler
-$webhook_url = "http://localhost:8000/api/v1/crm/lead-channels/webhook/";
+$webhook_url = "${liveWebhookUrl}";
 
 $lead_payload = [
     "name"         => sanitize_text_field($_POST["full_name"]),
@@ -1457,7 +1455,20 @@ $response = wp_remote_post($webhook_url, [
           </div>
 
           {/* Integration FAQs & Step-by-Step Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
+              <h4 className="font-bold text-slate-900 text-sm mb-3 flex items-center space-x-2">
+                <Zap className="w-4 h-4 text-amber-600" />
+                <span>Step-by-Step: Any External Software</span>
+              </h4>
+              <ol className="text-xs text-slate-600 space-y-2 list-decimal list-inside">
+                <li><strong>Step 1:</strong> Copy live URL <code className="bg-slate-100 text-blue-700 px-1 py-0.5 rounded font-mono break-all">{liveWebhookUrl}</code> (or <code className="font-mono">/api/v1/crm/leads/capture/</code>).</li>
+                <li><strong>Step 2:</strong> Choose method <code className="font-mono font-bold">POST</code> (JSON or Form URL-Encoded).</li>
+                <li><strong>Step 3:</strong> Optional security header <code className="font-mono">X-API-Key: &lt;secret&gt;</code> or <code className="font-mono">?api_key=&lt;secret&gt;</code> to route to a specific Channel.</li>
+                <li><strong>Step 4:</strong> Map at least <code className="font-mono">email</code> or <code className="font-mono">phone</code> plus <code className="font-mono">name</code>, <code className="font-mono">company</code>, <code className="font-mono">product</code>, <code className="font-mono">source</code>.</li>
+                <li><strong>Step 5:</strong> Test once &mdash; new leads appear immediately in CRM Leads &amp; live alerts!</li>
+              </ol>
+            </div>
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
               <h4 className="font-bold text-slate-900 text-sm mb-3 flex items-center space-x-2">
                 <Globe className="w-4 h-4 text-blue-600" />
@@ -1466,7 +1477,7 @@ $response = wp_remote_post($webhook_url, [
               <ol className="text-xs text-slate-600 space-y-2 list-decimal list-inside">
                 <li>Install the free <strong>Webhooks for Contact Form 7</strong> or <strong>Elementor Webhook Action</strong>.</li>
                 <li>In Form Actions, select <strong>Webhook</strong> &rarr; Add Action.</li>
-                <li>Paste your Odias ERP webhook URL: <code className="bg-slate-100 text-blue-700 px-1 py-0.5 rounded">http://&lt;domain&gt;/api/v1/crm/lead-channels/webhook/</code></li>
+                <li>Paste your Odias ERP webhook URL: <code className="bg-slate-100 text-blue-700 px-1 py-0.5 rounded break-all">{liveWebhookUrl}</code></li>
                 <li>Map form fields: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">name</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">email</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">phone</code>, <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">company_name</code>.</li>
                 <li>Submit a test inquiry. The lead will appear in your CRM Pipeline immediately with realtime notifications!</li>
               </ol>

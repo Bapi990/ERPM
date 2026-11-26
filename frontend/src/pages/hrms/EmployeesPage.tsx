@@ -171,6 +171,8 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
   // Dedicated Full Page Modes: 'list' (default directory) | 'view' (dossier) | 'add' (step-wise wizard) | 'edit' (step-wise editor)
@@ -548,7 +550,7 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
         : mode === 'manager'
         ? departments.find(d => d.name?.toLowerCase().includes('engineer') || d.name?.toLowerCase().includes('cloud') || d.name?.toLowerCase().includes('operation'))?.name
         : departments[0]?.name
-    ) || departments[0]?.name || '';
+    ) || departments[0]?.name || (mode === 'hr' ? 'Human Resources' : DEPARTMENT_OPTIONS[0]);
 
     const defaultDesig = (
       mode === 'hr'
@@ -556,8 +558,10 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
         : mode === 'manager'
         ? designations.find(d => d.title?.toLowerCase().includes('lead') || d.title?.toLowerCase().includes('director') || d.title?.toLowerCase().includes('manager'))?.title
         : designations[0]?.title
-    ) || designations[0]?.title || '';
+    ) || designations[0]?.title || (mode === 'hr' ? 'HR Manager' : mode === 'manager' ? 'Operations Lead' : DESIGNATION_OPTIONS[0]);
 
+    setFormError(null);
+    setSubmitting(false);
     setFormData({
       ...initialFormState,
       employee_id: nextCode,
@@ -776,10 +780,14 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
   // Submit Handler for Add or Edit
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
+    setFormError(null);
 
     // Check if email is already taken
     if (existingEmailEmp) {
-      alert(`⚠️ Email '${formData.email}' is already registered in Odias ERP to ${existingEmailEmp.full_name} (${existingEmailEmp.employee_id} - ${existingEmailEmp.role_name || existingEmailEmp.designation_title || 'Staff'}). Please enter a unique email address or update their existing record.`);
+      const msg = `Email '${formData.email}' is already registered in Odias ERP to ${existingEmailEmp.full_name} (${existingEmailEmp.employee_id} - ${existingEmailEmp.role_name || existingEmailEmp.designation_title || 'Staff'}). Please enter a unique email address.`;
+      setFormError(msg);
+      showToast(`⚠️ ${msg}`);
       setCurrentStep(1);
       return;
     }
@@ -789,14 +797,17 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
       const status = getStepStatus(stepNum);
       if (!status.isComplete) {
         setCurrentStep(stepNum);
-        showToast(`⚠️ Please complete "${ONBOARDING_STEPS[stepNum - 1]?.title}": ${status.error || 'Required fields missing'}`);
+        const msg = `Please complete "${ONBOARDING_STEPS[stepNum - 1]?.title}": ${status.error || 'Required fields missing'}`;
+        setFormError(msg);
+        showToast(`⚠️ ${msg}`);
         return;
       }
     }
 
     // Check passwords if entered
     if (formData.password && formData.password !== formData.confirm_password) {
-      alert('Passwords do not match! Please check password confirmation.');
+      setFormError('Passwords do not match! Please check password confirmation.');
+      setCurrentStep(6);
       return;
     }
 
@@ -854,10 +865,11 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
       delete payload.reporting_manager;
     }
 
+    setSubmitting(true);
     try {
       if (viewMode === 'add') {
         const created = await api.createEmployee(payload);
-        showToast(`🎉 ${firstName} ${lastName} (${effectiveEmpId}) onboarded successfully!`);
+        showToast(`🎉 ${firstName} ${lastName} (${created?.employee_id || effectiveEmpId}) onboarded successfully!`);
         emitEvent(
           'employee_created',
           'New Employee Onboarded',
@@ -875,9 +887,14 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
         );
       }
       await loadData();
+      setFormError(null);
       setViewMode('list');
     } catch (err: any) {
-      alert(err.message || 'Failed to save employee record');
+      const errMsg = err?.message || 'Failed to save employee record. Please verify all inputs.';
+      setFormError(errMsg);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -1239,6 +1256,21 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
 
         {/* Form Body */}
         <form onSubmit={handleSubmitForm} className="space-y-6">
+          {formError && (
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>{formError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormError(null)}
+                className="text-rose-700 underline shrink-0 cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
           {/* STEP 1: PERSONAL PROFILE */}
           {currentStep === 1 && (
             <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-sm space-y-5 animate-in fade-in duration-150">
@@ -1362,11 +1394,39 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
                       accept="image/*"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = () => setFormData({ ...formData, avatar_url: reader.result as string });
-                          reader.readAsDataURL(file);
-                        }
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const dataUrl = reader.result as string;
+                          const img = new Image();
+                          img.onload = () => {
+                            const maxDim = 320;
+                            let w = img.width;
+                            let h = img.height;
+                            if (w > maxDim || h > maxDim) {
+                              if (w > h) {
+                                h = Math.round((h * maxDim) / w);
+                                w = maxDim;
+                              } else {
+                                w = Math.round((w * maxDim) / h);
+                                h = maxDim;
+                              }
+                            }
+                            const canvas = document.createElement('canvas');
+                            canvas.width = w;
+                            canvas.height = h;
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                              ctx.drawImage(img, 0, 0, w, h);
+                              setFormData((prev) => ({ ...prev, avatar_url: canvas.toDataURL('image/jpeg', 0.8) }));
+                            } else {
+                              setFormData((prev) => ({ ...prev, avatar_url: dataUrl }));
+                            }
+                          };
+                          img.onerror = () => setFormData((prev) => ({ ...prev, avatar_url: dataUrl }));
+                          img.src = dataUrl;
+                        };
+                        reader.readAsDataURL(file);
                       }}
                       className="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                     />
@@ -2320,10 +2380,11 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
               ) : (
                 <button
                   type="submit"
-                  className="inline-flex items-center px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
+                  disabled={submitting}
+                  className="inline-flex items-center px-6 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-black text-xs shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                  <span>{isEdit ? 'Save Employee Changes' : 'Complete Employee Onboarding'}</span>
+                  <span>{submitting ? 'Saving Record...' : isEdit ? 'Save Employee Changes' : 'Complete Employee Onboarding'}</span>
                 </button>
               )}
             </div>
@@ -3141,55 +3202,6 @@ export const EmployeesPage: React.FC<EmployeesPageProps> = ({ mode = 'employee' 
           </button>
         </div>
       )}
-
-      {/* Top HRMS Segment Navigation Tabs (Direct Switching between Employee, Manager, and HR) */}
-      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100 rounded-2xl w-fit border border-slate-200/80">
-        <button
-          type="button"
-          onClick={() => navigate('/app/hrms/employees')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-            mode === 'employee'
-              ? 'bg-white text-[#1877f2] shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>Employee Directory</span>
-          <span className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">Staff</span>
-        </button>
-
-        {(user?.role_code === 'super_admin' || user?.role_code === 'hr_manager') && (
-          <button
-            type="button"
-            onClick={() => navigate('/app/hrms/managers')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              mode === 'manager'
-                ? 'bg-white text-emerald-600 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-            }`}
-          >
-            <UserCheck className="w-4 h-4" />
-            <span>Managers Directory</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold">Leads</span>
-          </button>
-        )}
-
-        {user?.role_code === 'super_admin' && (
-          <button
-            type="button"
-            onClick={() => navigate('/app/hrms/hr')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              mode === 'hr'
-                ? 'bg-white text-purple-600 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-            }`}
-          >
-            <Shield className="w-4 h-4" />
-            <span>HR Directory</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold">HR</span>
-          </button>
-        )}
-      </div>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

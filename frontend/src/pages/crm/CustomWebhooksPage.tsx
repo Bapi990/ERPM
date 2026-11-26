@@ -955,13 +955,13 @@ export const CustomWebhooksPage: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                setName('Local Odias Inbound API');
-                setUrl('http://localhost:8000/api/v1/crm/lead-channels/webhook/');
+                setName('Odias Inbound Lead Webhook');
+                setUrl(`${window.location.protocol}//${window.location.hostname}${window.location.port === '5173' ? ':8000' : (window.location.port ? `:${window.location.port}` : '')}/api/v1/crm/webhook/`);
                 setMethod('POST');
               }}
               className="px-2.5 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-cyan-500 text-slate-700 dark:text-slate-200 font-semibold"
             >
-              Local Odias Endpoint
+              Odias Inbound API
             </button>
           </div>
 

@@ -69,7 +69,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'erp_backend.wsgi.application'
 
 def check_mysql_health():
-    if os.environ.get('FORCE_SQLITE'):
+    if os.environ.get('FORCE_SQLITE', '').lower() in ('1', 'true', 'yes'):
         return False
     try:
         import pymysql
@@ -78,8 +78,8 @@ def check_mysql_health():
             user=os.environ.get('DB_USER', 'u529002218_erpodias90890'),
             password=os.environ.get('DB_PASSWORD', 'Erp@Odias909'),
             database=os.environ.get('DB_NAME', 'u529002218_erpodias90890'),
-            port=int(os.environ.get('DB_PORT', '3306')),
-            connect_timeout=2
+            port=int(os.environ.get('DB_PORT', '3306') or '3306'),
+            connect_timeout=4
         )
         with conn.cursor() as cur:
             cur.execute("SELECT 1;")
@@ -91,6 +91,14 @@ def check_mysql_health():
 
 MYSQL_AVAILABLE = check_mysql_health()
 
+SQLITE_DB_CONFIG = {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': BASE_DIR / 'db.sqlite3',
+    'OPTIONS': {
+        'timeout': 20,
+    },
+}
+
 if MYSQL_AVAILABLE:
     print(">>> [DATABASE ENGINE] Connected to Hostinger MySQL (srv685.hstgr.io)")
     DATABASES = {
@@ -100,26 +108,25 @@ if MYSQL_AVAILABLE:
             'USER': os.environ.get('DB_USER', 'u529002218_erpodias90890'),
             'PASSWORD': os.environ.get('DB_PASSWORD', 'Erp@Odias909'),
             'HOST': os.environ.get('DB_HOST', 'srv685.hstgr.io'),
-            'PORT': os.environ.get('DB_PORT', '3306'),
-            'CONN_MAX_AGE': 600,
+            'PORT': os.environ.get('DB_PORT', '3306') or '3306',
+            'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '300') or '300'),
+            'CONN_HEALTH_CHECKS': True,
             'OPTIONS': {
                 'charset': 'utf8mb4',
+                'connect_timeout': 5,
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             },
         },
-        'sqlite': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+        'sqlite': SQLITE_DB_CONFIG,
     }
 else:
     print(">>> [DATABASE ENGINE] Hostinger MySQL limit reached/unavailable. Active Failover to Local SQLite (db.sqlite3).")
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+        'default': SQLITE_DB_CONFIG,
+        'sqlite': SQLITE_DB_CONFIG,
     }
+
+DATABASE_ROUTERS = ['erp_backend.db_router.FailoverRouter']
 
 AUTH_USER_MODEL = 'accounts.User'
 

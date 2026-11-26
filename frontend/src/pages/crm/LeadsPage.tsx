@@ -170,32 +170,32 @@ export const LeadsPage: React.FC = () => {
 
   useEffect(() => {
     fetchLeads();
-    const unsub = subscribe('lead_*', () => {
+    const unsubLead = subscribe('lead_*', () => {
       fetchLeads();
     });
-    return () => unsub();
+    const unsubNotif = subscribe('notification', (evt: any) => {
+      if (evt?.link?.includes('/crm')) {
+        fetchLeads();
+      }
+    });
+    return () => {
+      unsubLead();
+      unsubNotif();
+    };
   }, [statusFilter]);
 
   const fetchLeads = async () => {
     setLoading(true);
     try {
-      let list: any[] = [];
-      try {
-        const data = await api.getLeads();
-        list = data.results || (Array.isArray(data) ? data : []);
-      } catch (e) {
-        console.warn('API getLeads failed, using fallback leads:', e);
-      }
-      if (list.length === 0) {
-        list = DEFAULT_LEADS;
-      }
+      const data = await api.getLeads();
+      const list = data.results || (Array.isArray(data) ? data : []);
       setLeads(statusFilter && statusFilter !== 'all' ? list.filter((l: Lead) => l.status === statusFilter) : list);
       if (viewLead) {
         const refreshed = list.find((item: any) => item.id === viewLead.id);
         if (refreshed) setViewLead(refreshed);
       }
     } catch (err) {
-      console.error(err);
+      console.warn('API getLeads failed, using fallback leads:', err);
       setLeads(DEFAULT_LEADS);
     } finally {
       setLoading(false);
@@ -826,11 +826,21 @@ export const LeadsPage: React.FC = () => {
               className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
               <option value="all">Source: All Lead Sources</option>
-              <option value="website">Website Form</option>
-              <option value="inbound">Inbound Call</option>
-              <option value="linkedin">LinkedIn Campaign</option>
-              <option value="referral">Client Referral</option>
+              <option value="website">Website Inbound</option>
+              <option value="website_webhook">Website Webhook / Form</option>
+              <option value="custom_api">External Software API</option>
+              <option value="api_webhook">Inbound Webhook API</option>
+              <option value="indiamart">IndiaMART / B2B</option>
+              <option value="tradeindia">TradeIndia</option>
+              <option value="justdial">JustDial</option>
+              <option value="zapier">Zapier / Make / Pabbly</option>
               <option value="meta">Meta Ads</option>
+              <option value="google_ads">Google Ads</option>
+              <option value="linkedin">LinkedIn Campaign</option>
+              <option value="gmail">Gmail / Email</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="referral">Client Referral</option>
+              <option value="inbound">Inbound Call</option>
               <option value="direct">Direct Outreach</option>
             </select>
           </div>

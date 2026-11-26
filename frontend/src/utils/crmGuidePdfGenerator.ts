@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { getInboundWebhookUrl } from './webhookUrl';
 
 /**
  * Enterprise CRM User & Developer Guide PDF Generator
@@ -204,11 +205,13 @@ export const generateCRMGuidePDF = (): void => {
 
   addParagraph('The Inbound Webhook API enables any external website, mobile app, or form builder to submit new leads directly into your Odias CRM instance in real time without human intervention.');
 
+  const inboundEndpoint = getInboundWebhookUrl('/api/v1/crm/webhook/');
   addSubsectionTitle('2.1 Inbound Webhook Endpoint');
   addCodeBox([
-    'ENDPOINT : POST http://localhost:8000/api/v1/crm/lead-channels/webhook/',
-    'HEADERS  : Content-Type: application/json',
-    'SECURITY : Optional X-Odias-API-Key or open channel token'
+    `ENDPOINT : POST ${inboundEndpoint}`,
+    `ALIASES  : /api/v1/crm/leads/capture/  |  /api/v1/crm/lead-channels/webhook/`,
+    'HEADERS  : Content-Type: application/json (or application/x-www-form-urlencoded)',
+    'SECURITY : Optional X-Webhook-Secret or X-API-Key header (or ?api_key=... query param)'
   ], 'API Gateway Specification');
 
   addSubsectionTitle('2.2 Inbound JSON Payload Specification');
@@ -244,7 +247,7 @@ export const generateCRMGuidePDF = (): void => {
     '  source: "Landing Page Inbound"',
     '};',
     '',
-    'fetch("http://localhost:8000/api/v1/crm/lead-channels/webhook/", {',
+    `fetch("${inboundEndpoint}", {`,
     '  method: "POST",',
     '  headers: { "Content-Type": "application/json" },',
     '  body: JSON.stringify(leadData)',
@@ -258,7 +261,7 @@ export const generateCRMGuidePDF = (): void => {
   addBullet('Step 1', 'Open your Elementor contact form editor.');
   addBullet('Step 2', 'In the left panel under "Actions After Submit", choose "Webhook".');
   addBullet('Step 3', 'In the "Webhook" settings box, paste your Odias CRM Webhook URL:');
-  addParagraph('http://localhost:8000/api/v1/crm/lead-channels/webhook/', 1);
+  addParagraph(inboundEndpoint, 1);
   addBullet('Step 4', 'Ensure the form fields have IDs matching "name", "email", "phone", and "company_name". Click Update.');
 
   addSubsectionTitle('3.3 Connecting Meta Lead Ads (Facebook & Instagram)');

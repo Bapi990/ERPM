@@ -40,7 +40,7 @@ class Employee(models.Model):
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=20)
     alternate_phone = models.CharField(max_length=20, blank=True, default='')
-    avatar_url = models.CharField(max_length=500, blank=True, default='')
+    avatar_url = models.TextField(blank=True, default='')
     
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name='employees')
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='employees')
@@ -79,7 +79,7 @@ class Employee(models.Model):
     hra = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
     da = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
     other_allowances = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
-    tax_regime = models.CharField(max_length=20, default='New Regime', blank=True)
+    tax_regime = models.CharField(max_length=50, default='New Regime', blank=True)
     payment_mode = models.CharField(max_length=50, default='Bank Transfer', blank=True)
     uan_number = models.CharField(max_length=50, blank=True, default='')
     esi_number = models.CharField(max_length=50, blank=True, default='')

@@ -9,8 +9,12 @@ import {
 import { api } from '../../api/client';
 import { useRealtime } from '../../context/RealtimeContext';
 import { generateCRMGuidePDF } from '../../utils/crmGuidePdfGenerator';
+import { getInboundWebhookUrl, getPublicApiOrigin } from '../../utils/webhookUrl';
 
 export const CRMDocumentationPage: React.FC = () => {
+  const inboundUrl = getInboundWebhookUrl('/api/v1/crm/webhook/');
+  const captureAliasUrl = getInboundWebhookUrl('/api/v1/crm/leads/capture/');
+  const liveApiOrigin = getPublicApiOrigin();
   const navigate = useNavigate();
   const { emitEvent, playNotificationSound } = useRealtime();
 
@@ -71,9 +75,10 @@ export const CRMDocumentationPage: React.FC = () => {
 
   const downloadDevManual = () => {
     const content = `# Odias ERP Enterprise CRM — Developer & Integration Manual
-Version: 2.0.0
-Base Inbound Webhook URL: http://localhost:8000/api/v1/crm/lead-channels/webhook/
-Outbound Webhook URL: http://localhost:8000/api/v1/crm/custom-webhooks/
+Version: 2.1.0
+Base Inbound Webhook URL: ${inboundUrl}
+Capture API Alias: ${captureAliasUrl}
+Outbound Webhook URL: ${liveApiOrigin}/api/v1/crm/custom-webhooks/
 
 ## 1. INBOUND LEAD WEBHOOK
 Submit HTTP POST requests with JSON payload:
@@ -118,7 +123,7 @@ Payload variables support: {{lead_id}}, {{contact_name}}, {{contact_email}}, {{c
 <body>
   <div class="form-box">
     <h2>Contact Sales & Get Quote</h2>
-    <form action="http://localhost:8000/api/v1/crm/lead-channels/webhook/" method="POST" id="leadForm">
+    <form action="${inboundUrl}" method="POST" id="leadForm">
       <label>Full Name *</label>
       <input type="text" name="name" placeholder="Vikas Sabnavis" required />
 
@@ -152,11 +157,11 @@ Payload variables support: {{lead_id}}, {{contact_name}}, {{contact_email}}, {{c
       },
       item: [
         {
-          name: "Inbound Lead Webhook (Website / Form / Ads)",
+          name: "Inbound Lead Webhook (Website / Form / Ads / External Software)",
           request: {
             method: "POST",
             header: [{ key: "Content-Type", value: "application/json" }],
-            url: { raw: "http://localhost:8000/api/v1/crm/lead-channels/webhook/" },
+            url: { raw: inboundUrl },
             body: {
               mode: "raw",
               raw: JSON.stringify({
@@ -175,7 +180,7 @@ Payload variables support: {{lead_id}}, {{contact_name}}, {{contact_email}}, {{c
           request: {
             method: "POST",
             header: [{ key: "Content-Type", value: "application/json" }],
-            url: { raw: "http://localhost:8000/api/v1/crm/webhooks/test-dispatch/" },
+            url: { raw: `${liveApiOrigin}/api/v1/crm/webhooks/test-dispatch/` },
             body: {
               mode: "raw",
               raw: JSON.stringify({
@@ -204,7 +209,7 @@ Arun,Kumar,arun.k@techcorp.io,+91 9988776655,TechCorp Solutions,CTO,Cloud Infras
     setInboundLoading(true);
     setInboundResult(null);
     try {
-      const response = await fetch('http://localhost:8000/api/v1/crm/lead-channels/webhook/', {
+      const response = await fetch('/api/v1/crm/webhook/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -547,11 +552,11 @@ Arun,Kumar,arun.k@techcorp.io,+91 9988776655,TechCorp Solutions,CTO,Cloud Infras
                   <span className="px-2 py-0.5 rounded font-black text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30">
                     POST
                   </span>
-                  <span className="text-cyan-300">http://localhost:8000/api/v1/crm/lead-channels/webhook/</span>
+                  <span className="text-cyan-300 break-all">{inboundUrl}</span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard('http://localhost:8000/api/v1/crm/lead-channels/webhook/', 'inbound-ep-guide')}
+                  onClick={() => copyToClipboard(inboundUrl, 'inbound-ep-guide')}
                   className="text-slate-400 hover:text-white flex items-center space-x-1 cursor-pointer"
                 >
                   {copiedSnippet === 'inbound-ep-guide' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -570,6 +575,21 @@ Arun,Kumar,arun.k@techcorp.io,+91 9988776655,TechCorp Solutions,CTO,Cloud Infras
   "estimated_value": 150000.00               // Optional: Deal budget in INR
 }`}</pre>
               </div>
+            </div>
+
+            {/* Step-by-Step External Software Setup Guide */}
+            <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20 space-y-2.5">
+              <p className="text-xs font-black text-blue-900 dark:text-blue-200 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-blue-600" />
+                <span>Step-by-Step Guide: Connect Any External Software (No Coding Required)</span>
+              </p>
+              <ol className="text-[11px] text-slate-700 dark:text-slate-300 space-y-1.5 list-decimal list-inside leading-relaxed">
+                <li><strong>Step 1 — Create or Copy API Key (Optional):</strong> Go to <button type="button" onClick={() => navigate('/app/crm/config')} className="text-blue-600 font-bold underline cursor-pointer">CRM Config &rarr; Channels</button> to copy your channel&apos;s <code className="font-mono bg-white dark:bg-slate-900 px-1 rounded">webhook_secret</code>, or send leads directly without a secret using the universal endpoint.</li>
+                <li><strong>Step 2 — Set POST Destination URL:</strong> Paste <code className="font-mono bg-white dark:bg-slate-900 px-1 rounded">{inboundUrl}</code> (or <code className="font-mono bg-white dark:bg-slate-900 px-1 rounded">{captureAliasUrl}</code>) into Zapier, Pabbly, Make, IndiaMART, JustDial, WordPress Elementor, or your external app.</li>
+                <li><strong>Step 3 — Map Contact Fields:</strong> Send JSON or Form data with at least <code className="font-mono">email</code> or <code className="font-mono">phone</code>, plus optional <code className="font-mono">name / full_name</code>, <code className="font-mono">company / company_name</code>, <code className="font-mono">product / interested_product</code>, <code className="font-mono">budget / estimated_value</code>, <code className="font-mono">source</code>, and <code className="font-mono">notes / message</code>.</li>
+                <li><strong>Step 4 — Authenticate Channel (Optional):</strong> Pass header <code className="font-mono">X-API-Key: &lt;secret&gt;</code> or query parameter <code className="font-mono">?api_key=&lt;secret&gt;</code> so Odias CRM auto-assigns the lead to that channel&apos;s sales rep.</li>
+                <li><strong>Step 5 — Verify Live Sync:</strong> Run one test submission in the <strong>Live API Sandbox</strong> tab. It appears instantly in <strong>CRM Leads</strong>, <strong>Lead Ingestion Logs</strong>, and fires real-time bell notifications &amp; outbound webhooks!</li>
+              </ol>
             </div>
 
             {/* 3 Step Integration Recipes */}
@@ -674,15 +694,15 @@ Arun,Kumar,arun.k@techcorp.io,+91 9988776655,TechCorp Solutions,CTO,Cloud Infras
                 <span className="px-2 py-0.5 rounded font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[11px]">
                   POST
                 </span>
-                <span className="text-slate-300">
-                  http://localhost:8000/api/v1/crm/lead-channels/webhook/
+                <span className="text-slate-300 break-all">
+                  {inboundUrl}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() =>
                   copyToClipboard(
-                    'http://localhost:8000/api/v1/crm/lead-channels/webhook/',
+                    inboundUrl,
                     'ep-inbound'
                   )
                 }
@@ -733,7 +753,7 @@ Arun,Kumar,arun.k@techcorp.io,+91 9988776655,TechCorp Solutions,CTO,Cloud Infras
             <div className="relative">
               <div className="p-4 rounded-xl bg-slate-950 text-emerald-400 font-mono text-xs overflow-x-auto border border-slate-800 leading-relaxed">
                 <pre>{`<!-- Odias Enterprise CRM Inbound Contact Form -->
-<form action="http://localhost:8000/api/v1/crm/lead-channels/webhook/" method="POST">
+<form action="${inboundUrl}" method="POST">
   <input type="text" name="name" placeholder="Full Name" required />
   <input type="email" name="email" placeholder="Business Email" required />
   <input type="tel" name="phone" placeholder="Phone Number" required />
@@ -747,7 +767,7 @@ Arun,Kumar,arun.k@techcorp.io,+91 9988776655,TechCorp Solutions,CTO,Cloud Infras
                 type="button"
                 onClick={() =>
                   copyToClipboard(
-                    `<form action="http://localhost:8000/api/v1/crm/lead-channels/webhook/" method="POST">\n  <input type="text" name="name" placeholder="Full Name" required />\n  <input type="email" name="email" placeholder="Business Email" required />\n  <input type="tel" name="phone" placeholder="Phone Number" required />\n  <input type="text" name="company_name" placeholder="Company Name" />\n  <input type="hidden" name="source" value="Website Landing Page" />\n  <textarea name="notes" placeholder="Requirement details..."></textarea>\n  <button type="submit">Submit Lead Inquiry</button>\n</form>`,
+                    `<form action="${inboundUrl}" method="POST">\n  <input type="text" name="name" placeholder="Full Name" required />\n  <input type="email" name="email" placeholder="Business Email" required />\n  <input type="tel" name="phone" placeholder="Phone Number" required />\n  <input type="text" name="company_name" placeholder="Company Name" />\n  <input type="hidden" name="source" value="Website Landing Page" />\n  <textarea name="notes" placeholder="Requirement details..."></textarea>\n  <button type="submit">Submit Lead Inquiry</button>\n</form>`,
                     'html-snippet'
                   )
                 }

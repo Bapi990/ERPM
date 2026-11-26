@@ -64,10 +64,82 @@ class EmployeeSerializer(serializers.ModelSerializer):
             )
         return val_clean
 
+    @staticmethod
+    def _ensure_default_department():
+        dept = Department.objects.first()
+        if not dept:
+            from organizations.models import Organization
+            org = Organization.objects.first()
+            if not org:
+                org = Organization.objects.create(
+                    name='Odias ERP Global Enterprise',
+                    email='admin@odiaserp.com',
+                )
+            dept = Department.objects.create(
+                organization=org,
+                name='General Operations',
+                code='GEN',
+            )
+        return dept
+
     def to_internal_value(self, data):
         import django.utils.timezone
         cleaned_data = data.copy() if hasattr(data, 'copy') else dict(data)
-        
+
+        # 0. Null-safe & MySQL STRICT_TRANS_TABLES length-safe sanitization for string fields
+        string_limits = {
+            'first_name': 100,
+            'last_name': 100,
+            'phone': 20,
+            'alternate_phone': 20,
+            'weekly_off': 50,
+            'gender': 20,
+            'employment_status': 20,
+            'employment_type': 20,
+            'work_location': 100,
+            'street_address': 255,
+            'city': 100,
+            'state': 100,
+            'postal_code': 20,
+            'emergency_contact_name': 100,
+            'emergency_contact_phone': 20,
+            'bank_name': 100,
+            'bank_account_number': 50,
+            'bank_ifsc': 20,
+            'pan_number': 20,
+            'aadhaar_number': 20,
+            'tax_regime': 50,
+            'payment_mode': 50,
+            'uan_number': 50,
+            'esi_number': 50,
+            'role_code': 50,
+            'role_name': 100,
+        }
+        nullable_defaults = {
+            'gender': 'other',
+            'employment_status': 'active',
+            'employment_type': 'full_time',
+            'work_location': 'Office',
+            'weekly_off': 'Shift Default',
+            'tax_regime': 'New Regime',
+            'payment_mode': 'Bank Transfer',
+            'role_code': 'employee',
+            'role_name': 'Associate Staff',
+        }
+        for field_name, max_len in string_limits.items():
+            if field_name in cleaned_data:
+                raw_val = cleaned_data.get(field_name)
+                if raw_val in (None, 'null', 'undefined'):
+                    cleaned_data[field_name] = nullable_defaults.get(field_name, '')
+                else:
+                    s_val = str(raw_val).strip()
+                    if not s_val and field_name in nullable_defaults:
+                        s_val = nullable_defaults[field_name]
+                    cleaned_data[field_name] = s_val[:max_len]
+
+        if 'avatar_url' in cleaned_data and cleaned_data.get('avatar_url') in (None, 'null', 'undefined'):
+            cleaned_data['avatar_url'] = ''
+
         # 1. Guaranteed unique employee_id generation
         role = str(cleaned_data.get('role_code', 'employee')).lower()
         prefix = 'ODS-HR' if role in ['hr', 'hr_manager'] else ('ODS-MGR' if role == 'manager' else 'ODS-EMP')
@@ -108,30 +180,11 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 except (ValueError, TypeError):
                     cleaned_data[num_field] = 0.0
 
-        # 4. Foreign Key sanitization
+        # 4. Foreign Key sanitization (resolve department & branch before designation)
         for fk in ['assigned_hr', 'reporting_manager', 'branch', 'department', 'designation', 'shift']:
             val = cleaned_data.get(fk)
             if val == '' or val == '---------' or val == 'default_hr' or val is None:
                 cleaned_data[fk] = None
-            elif fk == 'designation' and val:
-                des = None
-                if isinstance(val, str) and len(str(val)) == 36:
-                    des = Designation.objects.filter(id=val).first()
-                if not des:
-                    des = Designation.objects.filter(title__iexact=str(val)).first()
-                if not des:
-                    dept = Department.objects.first()
-                    des = Designation.objects.create(title=str(val), department=dept)
-                cleaned_data[fk] = str(des.id) if des else None
-            elif fk == 'department' and val:
-                dept = None
-                if isinstance(val, str) and len(str(val)) == 36:
-                    dept = Department.objects.filter(id=val).first()
-                if not dept:
-                    dept = Department.objects.filter(name__icontains=str(val)).first()
-                if not dept:
-                    dept = Department.objects.first()
-                cleaned_data[fk] = str(dept.id) if dept else None
             elif fk == 'branch' and val:
                 br = None
                 if isinstance(val, str) and len(str(val)) == 36:
@@ -141,6 +194,28 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 if not br:
                     br = Branch.objects.first()
                 cleaned_data[fk] = str(br.id) if br else None
+            elif fk == 'department' and val:
+                dept = None
+                if isinstance(val, str) and len(str(val)) == 36:
+                    dept = Department.objects.filter(id=val).first()
+                if not dept:
+                    dept = Department.objects.filter(name__icontains=str(val)).first()
+                if not dept:
+                    dept = self._ensure_default_department()
+                cleaned_data[fk] = str(dept.id) if dept else None
+            elif fk == 'designation' and val:
+                des = None
+                if isinstance(val, str) and len(str(val)) == 36:
+                    des = Designation.objects.filter(id=val).first()
+                if not des:
+                    des = Designation.objects.filter(title__iexact=str(val)).first()
+                if not des:
+                    resolved_dept_id = cleaned_data.get('department')
+                    dept = Department.objects.filter(id=resolved_dept_id).first() if resolved_dept_id else None
+                    if not dept:
+                        dept = self._ensure_default_department()
+                    des = Designation.objects.create(title=str(val)[:150], department=dept)
+                cleaned_data[fk] = str(des.id) if des else None
             elif fk in ['reporting_manager', 'assigned_hr'] and val:
                 if str(val).startswith('root') or not Employee.objects.filter(id=val).exists():
                     cleaned_data[fk] = None
@@ -160,58 +235,127 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
         return super().to_internal_value(cleaned_data)
 
+    def _sync_user_account(self, emp, password=None):
+        """Ensure linked authentication User + Role exist on primary and failover DB."""
+        if not emp.email:
+            return
+        from django.conf import settings
+        from django.contrib.auth import get_user_model
+        from accounts.models import Role
+
+        User = get_user_model()
+        email_norm = emp.email.strip().lower()
+        role_code = (emp.role_code or 'employee').strip()
+        role_obj = Role.objects.filter(code=role_code).first()
+        if not role_obj and role_code == 'hr':
+            role_obj = Role.objects.filter(code='hr_manager').first()
+        if not role_obj:
+            target_code = 'hr_manager' if role_code == 'hr' else role_code
+            role_obj, _ = Role.objects.get_or_create(
+                code=target_code,
+                defaults={
+                    'name': emp.role_name or target_code.replace('_', ' ').title(),
+                    'description': f'Auto-created role for {target_code}',
+                },
+            )
+
+        user = emp.user or User.objects.filter(email__iexact=email_norm).first()
+        raw_pw = password if (password and str(password).strip()) else 'Password@123'
+
+        if not user:
+            candidate_username = email_norm[:150]
+            if User.objects.filter(username__iexact=candidate_username).exists():
+                candidate_username = f"{email_norm.split('@')[0][:120]}_{str(emp.id)[:8]}"
+            user = User(
+                username=candidate_username,
+                email=email_norm,
+                first_name=emp.first_name[:150],
+                last_name=emp.last_name[:150],
+                phone=(emp.phone or '')[:20],
+                avatar_url=emp.avatar_url or '',
+                role=role_obj,
+                status='active',
+                is_active=True,
+            )
+            user.set_password(raw_pw)
+            user.save()
+        else:
+            user.first_name = emp.first_name[:150]
+            user.last_name = emp.last_name[:150]
+            user.phone = (emp.phone or '')[:20]
+            if emp.avatar_url:
+                user.avatar_url = emp.avatar_url
+            if role_obj:
+                user.role = role_obj
+            if password and str(password).strip():
+                user.set_password(password)
+            user.save()
+
+        if emp.user_id != user.id:
+            emp.user = user
+            emp.save(update_fields=['user'])
+
+        # Mirror login User & Role to failover SQLite when running on MySQL primary
+        active_db = getattr(emp._state, 'db', None) or 'default'
+        if active_db == 'default' and 'sqlite' in settings.DATABASES:
+            try:
+                sq_role = None
+                if role_obj:
+                    sq_role, _ = Role.objects.using('sqlite').get_or_create(
+                        code=role_obj.code,
+                        defaults={'name': role_obj.name, 'description': role_obj.description},
+                    )
+                sq_user = User.objects.using('sqlite').filter(email__iexact=email_norm).first()
+                if not sq_user:
+                    sq_uname = user.username
+                    if User.objects.using('sqlite').filter(username__iexact=sq_uname).exists():
+                        sq_uname = f"{sq_uname[:130]}_{str(emp.id)[:6]}"
+                    sq_user = User(
+                        id=user.id,
+                        username=sq_uname,
+                        email=email_norm,
+                        first_name=user.first_name,
+                        last_name=user.last_name,
+                        phone=user.phone,
+                        role=sq_role,
+                        status='active',
+                        is_active=True,
+                        password=user.password,
+                    )
+                    sq_user.save(using='sqlite')
+                else:
+                    sq_user.first_name = user.first_name
+                    sq_user.last_name = user.last_name
+                    sq_user.role = sq_role
+                    sq_user.password = user.password
+                    sq_user.save(using='sqlite')
+            except Exception as mirror_exc:
+                print(f'Notice: SQLite mirror skipped during employee sync: {mirror_exc}')
+
     def create(self, validated_data):
+        from django.db import transaction
         docs_data = validated_data.pop('uploaded_documents', [])
         password = validated_data.pop('password', None)
-        emp = super().create(validated_data)
-
-        if emp.email:
-            try:
-                from django.contrib.auth import get_user_model
-                from accounts.models import Role
-                User = get_user_model()
-                user = User.objects.filter(email__iexact=emp.email).first()
-                if not user:
-                    user = User(
-                        username=emp.email,
-                        email=emp.email,
-                        first_name=emp.first_name,
-                        last_name=emp.last_name,
-                        phone=emp.phone
-                    )
-                    if password:
-                        user.set_password(password)
-                    else:
-                        user.set_password('Password@123')
-                    user.save()
-                elif password:
-                    user.set_password(password)
-                    user.save()
-
-                # Sync user role
-                role_code = emp.role_code or 'employee'
-                role_obj = Role.objects.filter(code=role_code).first()
-                if not role_obj and role_code == 'hr':
-                    role_obj = Role.objects.filter(code='hr_manager').first()
-                if role_obj:
-                    user.role = role_obj
-                    user.save(update_fields=['role'])
-                emp.user = user
-                emp.save(update_fields=['user'])
-            except Exception as e:
-                print('Error linking user:', e)
+        try:
+            with transaction.atomic():
+                emp = super().create(validated_data)
+                self._sync_user_account(emp, password=password)
+        except serializers.ValidationError:
+            raise
+        except Exception as exc:
+            raise serializers.ValidationError({'detail': f'Could not create employee profile: {exc}'})
 
         # Only create documents if genuinely provided with actual name and file
         for doc in docs_data:
             if doc.get('name') and (doc.get('file_name') or doc.get('file_data')):
                 EmployeeDocument.objects.create(
                     employee=emp,
-                    name=doc.get('name', 'Document'),
-                    document_type=doc.get('document_type', 'other'),
-                    file_name=doc.get('file_name', ''),
-                    file_size=doc.get('file_size', ''),
+                    name=str(doc.get('name', 'Document'))[:200],
+                    document_type=str(doc.get('document_type', 'other'))[:50],
+                    file_name=str(doc.get('file_name', ''))[:255],
+                    file_size=str(doc.get('file_size', ''))[:50],
                     file_data=doc.get('file_data', ''),
-                    status=doc.get('status', 'verified')
+                    status=str(doc.get('status', 'verified'))[:20]
                 )
         self._sync_salary_structure(emp)
         return emp
@@ -221,16 +365,11 @@ class EmployeeSerializer(serializers.ModelSerializer):
         password = validated_data.pop('password', None)
         emp = super().update(instance, validated_data)
 
-        if password and emp.email:
+        if emp.email:
             try:
-                from django.contrib.auth import get_user_model
-                User = get_user_model()
-                user = emp.user or User.objects.filter(email=emp.email).first()
-                if user:
-                    user.set_password(password)
-                    user.save()
+                self._sync_user_account(emp, password=password)
             except Exception as e:
-                print('Error updating user password:', e)
+                print('Error syncing user on update:', e)
 
         if docs_data is not None:
             instance.documents.all().delete()
@@ -238,12 +377,12 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 if doc.get('name') and (doc.get('file_name') or doc.get('file_data')):
                     EmployeeDocument.objects.create(
                         employee=emp,
-                        name=doc.get('name', 'Document'),
-                        document_type=doc.get('document_type', 'other'),
-                        file_name=doc.get('file_name', ''),
-                        file_size=doc.get('file_size', ''),
+                        name=str(doc.get('name', 'Document'))[:200],
+                        document_type=str(doc.get('document_type', 'other'))[:50],
+                        file_name=str(doc.get('file_name', ''))[:255],
+                        file_size=str(doc.get('file_size', ''))[:50],
                         file_data=doc.get('file_data', ''),
-                        status=doc.get('status', 'verified')
+                        status=str(doc.get('status', 'verified'))[:20]
                     )
         self._sync_salary_structure(emp)
         return emp

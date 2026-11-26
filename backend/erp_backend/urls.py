@@ -8,6 +8,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 
+from .views import HealthCheckView
+
 from accounts.views import (
     LoginView, DemoSwitchUserView, CurrentUserView, UserViewSet, RoleViewSet, PermissionListView,
     ChangePasswordView, SecurityOverviewView, TerminateOtherSessionsView
@@ -123,6 +125,7 @@ router.register(r'announcements', AnnouncementViewSet, basename='announcements')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/v1/health/', HealthCheckView.as_view(), name='api-health-check'),
     
     # Auth APIs
     path('api/v1/auth/login/', LoginView.as_view(), name='auth-login'),
@@ -153,6 +156,7 @@ urlpatterns = [
     path('api/v1/crm/lead-channels/webhook/', InboundLeadWebhookView.as_view(), name='crm-inbound-webhook'),
     path('api/v1/crm/webhook/', InboundLeadWebhookView.as_view(), name='crm-webhook'),
     path('api/v1/crm/webhook/inbound/', InboundLeadWebhookView.as_view(), name='crm-webhook-inbound'),
+    path('api/v1/crm/leads/capture/', InboundLeadWebhookView.as_view(), name='crm-leads-capture'),
     path('api/v1/crm/webhooks/test-dispatch/', TestWebhookDispatchView.as_view(), name='crm-test-webhook-dispatch'),
     path('api/v1/crm/custom-webhooks/test/', TestWebhookDispatchView.as_view(), name='crm-custom-webhook-test'),
 

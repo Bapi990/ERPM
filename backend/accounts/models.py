@@ -56,7 +56,7 @@ class User(AbstractUser):
     phone = models.CharField(max_length=20, blank=True, default='')
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
-    avatar_url = models.CharField(max_length=500, blank=True, default='')
+    avatar_url = models.TextField(blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     is_two_factor_enabled = models.BooleanField(default=False)
     must_change_password = models.BooleanField(default=False)

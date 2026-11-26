@@ -6,14 +6,26 @@ import uuid
 class Lead(models.Model):
     SOURCE_CHOICES = [
         ('website', 'Website Inbound'),
-        ('referral', 'Customer Referral'),
-        ('linkedin', 'LinkedIn / Social'),
+        ('website_webhook', 'Website Webhook / Form'),
+        ('custom_api', 'External Software API'),
+        ('api_webhook', 'Inbound Webhook API'),
+        ('indiamart', 'IndiaMART / B2B Trade'),
+        ('tradeindia', 'TradeIndia Portal'),
+        ('justdial', 'JustDial Inquiry'),
+        ('zapier', 'Zapier / Make / Pabbly'),
+        ('hubspot', 'HubSpot / External CRM'),
         ('meta', 'Meta (Facebook / Instagram)'),
+        ('google_ads', 'Google / Search Ads'),
+        ('linkedin', 'LinkedIn / Social'),
         ('gmail', 'Gmail / Inbound Email'),
+        ('whatsapp', 'WhatsApp Business'),
         ('campaign', 'Marketing Campaign'),
+        ('referral', 'Customer Referral'),
         ('direct_call', 'Direct Outreach / Call'),
         ('walk_in', 'Walk-in / Event'),
-        ('api_webhook', 'Inbound Webhook API'),
+        ('event', 'Event / Trade Show'),
+        ('inbound', 'Inbound Inquiry'),
+        ('direct', 'Direct Entry'),
     ]
     STATUS_CHOICES = [
         ('new', 'New Lead'),
@@ -33,15 +45,15 @@ class Lead(models.Model):
     lead_id = models.CharField(max_length=50, unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100, blank=True, default='')
-    company_name = models.CharField(max_length=150)
-    email = models.EmailField()
-    phone = models.CharField(max_length=30)
+    company_name = models.CharField(max_length=150, blank=True, default='Direct Inquiry')
+    email = models.EmailField(blank=True, default='')
+    phone = models.CharField(max_length=30, blank=True, default='')
     website = models.URLField(blank=True, default='')
     city = models.CharField(max_length=100, blank=True, default='')
     state = models.CharField(max_length=100, blank=True, default='')
     country = models.CharField(max_length=100, default='India')
     
-    source = models.CharField(max_length=30, choices=SOURCE_CHOICES, default='website')
+    source = models.CharField(max_length=50, choices=SOURCE_CHOICES, default='website', blank=True)
     interested_product = models.CharField(max_length=200, blank=True, default='')
     estimated_value = models.DecimalField(max_digits=12, decimal_places=2, default=0.0)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='new')
@@ -99,6 +111,9 @@ class Customer(models.Model):
     
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"{self.company_name} ({self.customer_code})"

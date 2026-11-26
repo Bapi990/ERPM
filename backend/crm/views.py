@@ -34,6 +34,276 @@ from accounts.hierarchy import (
     get_scoped_user_ids, can_user_assign_leads, get_assignable_users_for_user
 )
 
+
+def _generate_unique_lead_id():
+    year = timezone.now().year
+    count = Lead.objects.count() + 1
+    candidate = f"LEAD-{year}-{count:03d}"
+    while Lead.objects.filter(lead_id=candidate).exists():
+        count += 1
+        candidate = f"LEAD-{year}-{count:03d}"
+    return candidate
+
+
+def _generate_unique_customer_code():
+    year = timezone.now().year
+    count = Customer.objects.count() + 1
+    candidate = f"CUST-{year}-{count:03d}"
+    while Customer.objects.filter(customer_code=candidate).exists():
+        count += 1
+        candidate = f"CUST-{year}-{count:03d}"
+    return candidate
+
+
+def _coerce_json_dict(raw):
+    if raw is None:
+        return {}
+    if hasattr(raw, 'lists'):
+        return {k: (v[0] if len(v) == 1 else v) for k, v in raw.lists()}
+    if isinstance(raw, dict):
+        out = {}
+        for k, v in raw.items():
+            if isinstance(v, (str, int, float, bool)) or v is None:
+                out[str(k)] = v
+            elif isinstance(v, (dict, list)):
+                out[str(k)] = v
+            else:
+                out[str(k)] = str(v)
+        return out
+    return {'raw': str(raw)}
+
+
+def _normalize_lead_source(raw_source):
+    s = str(raw_source or '').strip().lower().replace('-', '_').replace(' ', '_')
+    alias_map = {
+        'wp': 'website_webhook',
+        'wordpress': 'website_webhook',
+        'elementor': 'website_webhook',
+        'cf7': 'website_webhook',
+        'contact_form': 'website_webhook',
+        'web': 'website',
+        'form': 'website_webhook',
+        'fb': 'meta',
+        'facebook': 'meta',
+        'ig': 'meta',
+        'instagram': 'meta',
+        'fb_ads': 'meta',
+        'meta_ads': 'meta',
+        'india_mart': 'indiamart',
+        'indiamart_api': 'indiamart',
+        'trade_india': 'tradeindia',
+        'just_dial': 'justdial',
+        'jd': 'justdial',
+        'make': 'zapier',
+        'pabbly': 'zapier',
+        'integromat': 'zapier',
+        'gads': 'google_ads',
+        'google': 'google_ads',
+        'google_form': 'website_webhook',
+        'api': 'custom_api',
+        'webhook': 'api_webhook',
+        'external': 'custom_api',
+        'email': 'gmail',
+        'call': 'direct_call',
+    }
+    if s in alias_map:
+        return alias_map[s]
+    if s in dict(Lead.SOURCE_CHOICES):
+        return s
+    return s[:50] if s else 'api_webhook'
+
+
+def _parse_estimated_value(raw_val, default_val='0.00'):
+    import re
+    if raw_val in (None, '', 'null', 'undefined'):
+        return Decimal(default_val)
+    if isinstance(raw_val, (int, float, Decimal)):
+        return Decimal(str(raw_val))
+    cleaned = re.sub(r'[^0-9.]', '', str(raw_val))
+    if not cleaned or cleaned.count('.') > 1:
+        return Decimal(default_val)
+    try:
+        return Decimal(cleaned)
+    except Exception:
+        return Decimal(default_val)
+
+
+def _extract_inbound_lead_fields(raw_dict):
+    flat = dict(raw_dict or {})
+    # Unwrap common third-party payload envelopes (Elementor, IndiaMART, Zapier, HubSpot, generic webhook wrappers)
+    for wrapper_key in ('RESPONSE', 'data', 'payload', 'lead', 'contact', 'entry'):
+        nested = flat.get(wrapper_key)
+        if isinstance(nested, dict):
+            for k, v in nested.items():
+                flat.setdefault(k, v)
+    fields_node = flat.get('fields')
+    if isinstance(fields_node, dict):
+        for k, v in fields_node.items():
+            if isinstance(v, dict) and 'value' in v:
+                flat.setdefault(k, v.get('value'))
+            else:
+                flat.setdefault(k, v)
+    elif isinstance(fields_node, list):
+        for item in fields_node:
+            if isinstance(item, dict):
+                key = item.get('id') or item.get('name') or item.get('title')
+                if key:
+                    flat.setdefault(str(key).lower().replace(' ', '_'), item.get('value'))
+
+    lower_map = {str(k).strip().lower(): v for k, v in flat.items()}
+
+    def pick(*keys, default=''):
+        for k in keys:
+            val = lower_map.get(k.lower())
+            if val not in (None, '', [], {}):
+                return str(val).strip()
+        return default
+
+    raw_first = pick('first_name', 'firstname', 'fname')
+    raw_last = pick('last_name', 'lastname', 'lname')
+    raw_name = pick('name', 'full_name', 'fullname', 'contact_name', 'sender_name', 'your_name', 'client_name', 'lead_name')
+    if not raw_first and raw_name:
+        parts = raw_name.split(None, 1)
+        raw_first = parts[0]
+        if not raw_last and len(parts) > 1:
+            raw_last = parts[1]
+    if not raw_first:
+        raw_first = 'Inbound Lead'
+
+    email = pick('email', 'email_address', 'e-mail', 'work_email', 'sender_email', 'your_email', 'mail').lower()
+    phone = pick('phone', 'mobile', 'phone_number', 'mobile_number', 'sender_mobile', 'contact_number', 'whatsapp', 'tel', 'your_phone')
+    company = pick('company_name', 'company', 'organization', 'org', 'business_name', 'sender_company', 'firm', default='External Inbound')
+    city = pick('city', 'sender_city', 'location', 'town')
+    state = pick('state', 'sender_state', 'region', 'province')
+    country = pick('country', 'country_iso', default='India')
+    website = pick('website', 'url', 'site_url')
+    if website and not website.startswith(('http://', 'https://')):
+        website = f"https://{website}"
+    product = pick('interested_product', 'product', 'service', 'subject', 'product_name', 'plan', 'requirement', 'topic', default='Inbound Software Inquiry')
+    notes = pick('notes', 'message', 'comments', 'comment', 'description', 'enquiry_message', 'query', 'remarks', default='Received via External Inbound API')
+    source = _normalize_lead_source(pick('source', 'channel', 'utm_source', 'lead_source', 'platform', default='api_webhook'))
+    priority = pick('priority', 'urgency', default='medium').lower()
+    if priority not in ('low', 'medium', 'high'):
+        priority = 'medium'
+    est_val = _parse_estimated_value(
+        lower_map.get('estimated_value') or lower_map.get('budget') or lower_map.get('deal_value') or lower_map.get('amount') or lower_map.get('value'),
+        default_val='0.00'
+    )
+
+    return {
+        'first_name': raw_first[:100],
+        'last_name': raw_last[:100],
+        'company_name': company[:150],
+        'email': email[:254],
+        'phone': phone[:30],
+        'website': website[:200],
+        'city': city[:100],
+        'state': state[:100],
+        'country': country[:100],
+        'source': source,
+        'interested_product': product[:200],
+        'estimated_value': est_val,
+        'priority': priority,
+        'notes': notes,
+        'secret': pick('webhook_secret', 'api_key', 'secret', 'token'),
+    }
+
+
+def _create_lead_notifications(lead, actor_user=None, title_prefix='New Lead'):
+    try:
+        from notifications.models import Notification
+        recipients = set()
+        if lead.assigned_to_id:
+            recipients.add(lead.assigned_to_id)
+        for admin_id in User.objects.filter(
+            Q(is_superuser=True) | Q(role__code__in=['super_admin', 'hr_manager'])
+        ).filter(is_active=True).values_list('id', flat=True)[:5]:
+            recipients.add(admin_id)
+        if not recipients and actor_user:
+            recipients.add(actor_user.id)
+
+        contact_info = lead.email or lead.phone or 'No contact provided'
+        for uid in recipients:
+            Notification.objects.create(
+                user_id=uid,
+                title=f"{title_prefix}: {lead.contact_name}",
+                message=f"{lead.company_name} ({lead.source}) • {contact_info} • {lead.interested_product}",
+                notification_type='success',
+                link='/app/crm/leads',
+            )
+    except Exception as exc:
+        print(f">>> [CRM NOTIFICATION NOTICE] {exc}")
+
+
+def _dispatch_outbound_webhooks(event_name, entity_type, payload_data):
+    """Best-effort dispatch of active outbound CustomWebhooks listening for trigger_event=event_name."""
+    try:
+        active_hooks = list(CustomWebhook.objects.filter(is_active=True, trigger_event=event_name)[:5])
+        if not active_hooks:
+            return
+        body_dict = json.loads(json.dumps({
+            'event': event_name,
+            'entity_type': entity_type,
+            'timestamp': timezone.now().isoformat(),
+            'data': payload_data,
+        }, default=str))
+        payload_bytes = json.dumps(body_dict).encode('utf-8')
+        for hook in active_hooks:
+            target_url = (hook.url or '').strip()
+            if not target_url.startswith(('http://', 'https://')):
+                continue
+            headers = {'User-Agent': 'Odias-ERP-Webhook-Dispatcher/2.0', 'Content-Type': 'application/json'}
+            if isinstance(hook.headers, dict):
+                for k, v in hook.headers.items():
+                    if k:
+                        headers[str(k)] = str(v)
+            method = (hook.method or 'POST').upper()
+            start = time.time()
+            res_status = None
+            res_body = ''
+            delivery_status = 'failed'
+            err_msg = ''
+            try:
+                req = urllib.request.Request(
+                    url=target_url,
+                    data=payload_bytes if method in ('POST', 'PUT', 'PATCH') else None,
+                    headers=headers,
+                    method=method,
+                )
+                with urllib.request.urlopen(req, timeout=2) as resp:
+                    res_status = resp.status
+                    res_body = resp.read().decode('utf-8', errors='replace')[:1000]
+                    if 200 <= res_status < 300:
+                        delivery_status = 'success'
+            except urllib.error.HTTPError as he:
+                res_status = he.code
+                err_msg = f"HTTP {he.code}: {he.reason}"
+            except Exception as ex:
+                res_status = 502
+                err_msg = str(ex)[:500]
+            latency_ms = max(5, int((time.time() - start) * 1000))
+            hook.dispatches_count += 1
+            hook.last_triggered_at = timezone.now()
+            if delivery_status == 'success':
+                hook.success_count += 1
+            hook.save(update_fields=['dispatches_count', 'success_count', 'last_triggered_at'])
+            WebhookDeliveryLog.objects.create(
+                webhook=hook,
+                event=event_name,
+                target_url=target_url,
+                http_method=method,
+                request_headers=headers,
+                request_payload=body_dict,
+                response_status=res_status,
+                response_body=res_body,
+                latency_ms=latency_ms,
+                status=delivery_status,
+                error_message=err_msg,
+            )
+    except Exception as exc:
+        print(f">>> [OUTBOUND WEBHOOK NOTICE] {exc}")
+
+
 class LeadViewSet(viewsets.ModelViewSet):
     serializer_class = LeadSerializer
     permission_classes = [IsAuthenticated]
@@ -56,8 +326,7 @@ class LeadViewSet(viewsets.ModelViewSet):
         return qs.filter(assigned_to=user)
 
     def perform_create(self, serializer):
-        lead_count = Lead.objects.count() + 1
-        lead_id = f"LEAD-2026-{lead_count:03d}"
+        lead_id = _generate_unique_lead_id()
         assigned_user = serializer.validated_data.get('assigned_to') or self.request.user
         lead = serializer.save(lead_id=lead_id, assigned_to=assigned_user)
         
@@ -78,6 +347,8 @@ class LeadViewSet(viewsets.ModelViewSet):
             entity_id=str(lead.id),
             description=f"Created CRM Lead {lead.company_name} ({lead.lead_id}) with value ₹{lead.estimated_value}."
         )
+        _create_lead_notifications(lead, actor_user=self.request.user, title_prefix='New CRM Lead')
+        _dispatch_outbound_webhooks('lead.created', 'lead', LeadSerializer(lead).data)
 
     @action(detail=True, methods=['post'])
     def change_status(self, request, pk=None):
@@ -113,7 +384,12 @@ class LeadViewSet(viewsets.ModelViewSet):
             description=f"Lead {lead.lead_id} status changed from {old_status} to {new_status}. Remark: {remark_text}"
         )
 
-        return Response(LeadSerializer(lead).data)
+        lead_data = LeadSerializer(lead).data
+        _dispatch_outbound_webhooks('lead.status_changed', 'lead', lead_data)
+        if new_status == 'won':
+            _dispatch_outbound_webhooks('lead.won', 'lead', lead_data)
+
+        return Response(lead_data)
 
     @action(detail=True, methods=['post'])
     def schedule_followup(self, request, pk=None):
@@ -355,12 +631,12 @@ class LeadViewSet(viewsets.ModelViewSet):
         if lead.status == 'won':
             return Response({'error': 'Lead already converted'}, status=status.HTTP_400_BAD_REQUEST)
 
-        cust_count = Customer.objects.count() + 1
+        cust_email = (lead.email or f"{lead.lead_id.lower()}@inquiry.local").strip()
         customer, created = Customer.objects.get_or_create(
-            email=lead.email,
+            email=cust_email,
             defaults={
-                'customer_code': f"CUST-{cust_count:04d}",
-                'company_name': lead.company_name,
+                'customer_code': _generate_unique_customer_code(),
+                'company_name': lead.company_name or 'Direct Client',
                 'contact_person': lead.contact_name,
                 'phone': lead.phone,
                 'city': lead.city or 'Bhubaneswar',
@@ -373,7 +649,7 @@ class LeadViewSet(viewsets.ModelViewSet):
 
         ContactPerson.objects.get_or_create(
             customer=customer,
-            email=lead.email,
+            email=lead.email or f"{lead.lead_id.lower()}@inquiry.local",
             defaults={
                 'name': lead.contact_name,
                 'designation': 'Primary Contact',
@@ -443,8 +719,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         return qs.filter(Q(assigned_to_id__in=scoped_ids) | Q(assigned_to__isnull=True))
 
     def perform_create(self, serializer):
-        cust_count = Customer.objects.count() + 1
-        code = f"CUST-2026-{cust_count:03d}"
+        code = _generate_unique_customer_code()
         cust = serializer.save(customer_code=code, assigned_to=self.request.user)
         if cust.contact_person:
             ContactPerson.objects.create(
@@ -455,6 +730,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
                 phone=cust.phone,
                 is_primary=True
             )
+        _dispatch_outbound_webhooks('customer.created', 'customer', CustomerSerializer(cust).data)
 
 class ContactPersonViewSet(viewsets.ModelViewSet):
     queryset = ContactPerson.objects.all().select_related('customer')
@@ -710,8 +986,7 @@ class LeadChannelConfigViewSet(viewsets.ModelViewSet):
 
         payload = simulated_data.get(channel.channel_type, simulated_data['custom_api'])
         
-        lead_count = Lead.objects.count() + 1
-        lead_id = f"LEAD-2026-{lead_count:03d}"
+        lead_id = _generate_unique_lead_id()
         
         lead = Lead.objects.create(
             lead_id=lead_id,
@@ -760,76 +1035,145 @@ class LeadChannelConfigViewSet(viewsets.ModelViewSet):
         })
 
 class InboundLeadWebhookView(APIView):
+    """
+    Universal Public Inbound Lead Capture Endpoint.
+    Accepts JSON, form-data, and URL-encoded submissions from external websites,
+    WordPress/Elementor/CF7, IndiaMART, JustDial, TradeIndia, Zapier, Make, Pabbly, Meta Ads, or custom software.
+    """
+    authentication_classes = []
     permission_classes = [AllowAny]
 
+    def get(self, request):
+        base_url = request.build_absolute_uri('/').rstrip('/')
+        return Response({
+            'status': 'ready',
+            'service': 'Odias ERP Universal Lead Capture API',
+            'endpoints': {
+                'primary': f'{base_url}/api/v1/crm/webhook/',
+                'inbound_alias': f'{base_url}/api/v1/crm/webhook/inbound/',
+                'capture_alias': f'{base_url}/api/v1/crm/leads/capture/',
+                'channel_alias': f'{base_url}/api/v1/crm/lead-channels/webhook/',
+            },
+            'accepted_methods': ['POST'],
+            'accepted_content_types': [
+                'application/json',
+                'application/x-www-form-urlencoded',
+                'multipart/form-data',
+            ],
+            'auth_headers': ['X-Webhook-Secret', 'X-API-Key'],
+            'required_fields': 'At least one of: email OR phone',
+            'optional_fields': [
+                'first_name', 'last_name', 'name / full_name', 'company_name / company',
+                'interested_product / product / service', 'estimated_value / budget',
+                'source / utm_source', 'city', 'state', 'country', 'priority', 'notes / message',
+            ],
+        })
+
     def post(self, request):
-        data = request.data
-        company_name = data.get('company_name') or data.get('company') or 'Web Inbound Company'
-        first_name = data.get('first_name') or data.get('name', 'Web Lead')
-        last_name = data.get('last_name', '')
-        email = data.get('email')
-        phone = data.get('phone', '')
+        raw_payload = _coerce_json_dict(request.data)
+        extracted = _extract_inbound_lead_fields(raw_payload)
 
-        if not email:
-            return Response({'error': 'email is required in lead payload.'}, status=status.HTTP_400_BAD_REQUEST)
+        email = extracted['email']
+        phone = extracted['phone']
+        if not email and not phone:
+            return Response(
+                {
+                    'success': False,
+                    'error': 'Either email or phone is required in lead payload.',
+                    'hint': 'Pass {"name": "...", "email": "...", "phone": "..."} as JSON or form-data.',
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        secret = request.headers.get('X-Webhook-Secret') or request.query_params.get('secret')
-        channel = LeadChannelConfig.objects.filter(is_active=True).first()
+        secret = (
+            request.headers.get('X-Webhook-Secret')
+            or request.headers.get('X-API-Key')
+            or request.query_params.get('secret')
+            or request.query_params.get('api_key')
+            or extracted.get('secret')
+            or ''
+        ).strip()
+        auth_header = request.headers.get('Authorization', '')
+        if not secret and auth_header.startswith('Bearer '):
+            secret = auth_header.split(' ', 1)[1].strip()
+
+        channel = None
         if secret:
-            channel_match = LeadChannelConfig.objects.filter(webhook_secret=secret, is_active=True).first()
-            if channel_match:
-                channel = channel_match
+            channel = LeadChannelConfig.objects.filter(
+                Q(webhook_secret=secret) | Q(api_key=secret),
+                is_active=True,
+            ).first()
+        if not channel:
+            source_param = request.query_params.get('source') or extracted['source']
+            channel = LeadChannelConfig.objects.filter(channel_type=source_param, is_active=True).first()
+        if not channel:
+            channel = LeadChannelConfig.objects.filter(is_active=True).first()
 
-        lead_count = Lead.objects.count() + 1
-        lead_id = f"LEAD-2026-{lead_count:03d}"
-        
-        default_user = (channel.auto_assign_to if channel and channel.auto_assign_to else None) or User.objects.filter(is_superuser=True).first() or User.objects.first()
+        default_user = (
+            (channel.auto_assign_to if channel and channel.auto_assign_to else None)
+            or User.objects.filter(is_superuser=True, is_active=True).first()
+            or User.objects.filter(is_active=True).first()
+            or User.objects.first()
+        )
 
+        lead_id = _generate_unique_lead_id()
         lead = Lead.objects.create(
             lead_id=lead_id,
-            first_name=first_name,
-            last_name=last_name,
-            company_name=company_name,
+            first_name=extracted['first_name'],
+            last_name=extracted['last_name'],
+            company_name=extracted['company_name'],
             email=email,
             phone=phone,
-            city=data.get('city', ''),
-            state=data.get('state', ''),
-            source=data.get('source', 'website'),
-            interested_product=data.get('interested_product', 'ERP System Inbound'),
-            estimated_value=data.get('estimated_value', 100000.0),
+            website=extracted['website'],
+            city=extracted['city'],
+            state=extracted['state'],
+            country=extracted['country'],
+            source=extracted['source'],
+            interested_product=extracted['interested_product'],
+            estimated_value=extracted['estimated_value'],
             status='new',
-            priority='medium',
+            priority=extracted['priority'],
             assigned_to=default_user,
-            notes=data.get('notes', 'Received via Inbound Webhook API')
+            notes=extracted['notes'],
         )
 
         LeadStatusRemark.objects.create(
             lead=lead,
             old_status='webhook_ingestion',
             new_status='new',
-            remark=f"Captured via Inbound Webhook API. Payload: {str(data)[:200]}",
-            created_by=default_user
+            remark=f"Captured via External API ({lead.source}). Payload preview: {str(raw_payload)[:240]}",
+            created_by=default_user,
         )
 
         log = LeadIngestionLog.objects.create(
             channel=channel,
-            source='website_webhook',
-            sender_email=email,
-            sender_name=f"{first_name} {last_name}".strip(),
-            payload=data,
+            source=lead.source or 'website_webhook',
+            sender_email=email[:150],
+            sender_name=lead.contact_name[:150],
+            payload=raw_payload,
             status='success',
-            lead=lead
+            lead=lead,
         )
 
         if channel:
             channel.leads_captured += 1
             channel.last_sync_at = timezone.now()
-            channel.save()
+            channel.save(update_fields=['leads_captured', 'last_sync_at'])
+
+        _create_lead_notifications(lead, actor_user=default_user, title_prefix='External API Lead')
+        _dispatch_outbound_webhooks('lead.created', 'lead', LeadSerializer(lead).data)
 
         return Response({
             'success': True,
+            'id': str(lead.id),
             'lead_id': lead.lead_id,
-            'message': 'Lead successfully captured and queued.'
+            'contact_name': lead.contact_name,
+            'company_name': lead.company_name,
+            'source': lead.source,
+            'channel': channel.name if channel else 'Universal Inbound API',
+            'assigned_to': default_user.get_full_name() or default_user.username if default_user else None,
+            'log_id': str(log.id),
+            'message': 'Lead successfully captured and synced to Odias ERP CRM.',
         }, status=status.HTTP_201_CREATED)
 
 class LeadIngestionLogViewSet(viewsets.ReadOnlyModelViewSet):
@@ -868,7 +1212,7 @@ class SalesPerformanceView(APIView):
         user = request.user
         scoped_ids = get_scoped_user_ids(user)
 
-        users_qs = User.objects.filter(is_active=True).exclude(role__name='Accountant')
+        users_qs = User.objects.filter(is_active=True, status='active').exclude(role__name='Accountant')
         if scoped_ids is not None:
             users_qs = users_qs.filter(id__in=scoped_ids)
 
